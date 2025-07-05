@@ -1,7 +1,8 @@
-import Dashboard from "./pages/Dashboard";
+import React from 'react'
+import Dashboard from './Dashboard.jsx'
 
 function App() {
-  return <Dashboard />;
+  return <Dashboard />
 }
 
-export default App;
+export default App
