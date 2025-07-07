@@ -22,9 +22,9 @@ const Dashboard = () => {
   ]
 
   const kpiData = [
-    { label: 'Total Revenue: $2M', period: 'This Quarter', color: '#3b82f6' },
-    { label: 'Average ROA: 15%', period: 'This Quarter', color: '#3b82f6' },
-    { label: 'Forecasted Revenue: $2.5M', period: 'Next Quarter', color: '#3b82f6' }
+    { label: 'Total Revenue: $2M', period: 'This Quarter', color: 'bg-blue-500' },
+    { label: 'Average ROA: 15%', period: 'This Quarter', color: 'bg-blue-500' },
+    { label: 'Forecasted Revenue: $2.5M', period: 'Next Quarter', color: 'bg-blue-500' }
   ]
 
   const recentUpdates = [
@@ -41,6 +41,13 @@ const Dashboard = () => {
       action: 'in Forecast Q4 2024', 
       description: 'New projections are ready for...',
       time: '4h ago'
+    },
+    { 
+      avatar: '👤', 
+      name: 'David M', 
+      action: 'in CSV Database', 
+      description: 'Amortization schedule',
+      time: '3h ago'
     }
   ]
 
@@ -52,37 +59,21 @@ const Dashboard = () => {
   ]
 
   const quickActions = [
-    { title: 'Quarterly reports', color: '#e2e8f0' },
-    { title: 'Forecasting Revenue trends', color: '#3b82f6', active: true },
-    { title: 'Datamining KPI summary', color: '#e2e8f0' }
+    { title: 'Quarterly reports', color: 'bg-slate-200', active: false },
+    { title: 'Forecasting Revenue trends', color: 'bg-blue-500', active: true },
+    { title: 'Datamining KPI summary', color: 'bg-slate-200', active: false }
   ]
 
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex h-screen font-sans bg-slate-50 text-slate-700">
       {/* Sidebar */}
-      <div style={{ 
-        width: '60px', 
-        backgroundColor: '#2563eb', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        padding: '20px 0' 
-      }}>
+      <div className="w-16 bg-blue-600 flex flex-col items-center py-5">
         {sidebarItems.map((item, index) => (
           <div
             key={index}
-            style={{
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '15px',
-              backgroundColor: item.active ? '#1d4ed8' : 'transparent',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '18px'
-            }}
+            className={`w-10 h-10 flex items-center justify-center mb-4 rounded-lg cursor-pointer text-lg ${
+              item.active ? 'bg-blue-700' : 'bg-transparent'
+            }`}
           >
             {item.icon}
           </div>
@@ -90,108 +81,60 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header style={{ 
-          padding: '20px 30px', 
-          backgroundColor: 'white', 
-          borderBottom: '1px solid #e2e8f0',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <header className="px-8 py-5 bg-white border-b border-slate-200 flex justify-between items-center">
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1e293b', marginBottom: '5px' }}>
+            <h1 className="text-3xl font-bold text-slate-800 mb-1">
               FinSight
             </h1>
-            <p style={{ color: '#64748b', fontSize: '14px' }}>Your financial dashboard</p>
+            <p className="text-slate-500 text-sm">Your financial dashboard</p>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ position: 'relative' }}>
+          <div className="flex items-center gap-5">
+            <div className="relative">
               <input
                 type="text"
                 placeholder="Filter by company"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  padding: '10px 40px 10px 15px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  width: '300px',
-                  fontSize: '14px',
-                  backgroundColor: '#f8fafc'
-                }}
+                className="py-2.5 pl-4 pr-10 border border-slate-200 rounded-lg w-80 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <span style={{ 
-                position: 'absolute', 
-                right: '15px', 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: '#64748b'
-              }}>
+              <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500">
                 🔍
               </span>
             </div>
             
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: '#e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}>
+            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center cursor-pointer">
               👤
             </div>
           </div>
         </header>
 
         {/* Dashboard Content */}
-        <div style={{ flex: 1, padding: '30px', display: 'flex', gap: '30px' }}>
+        <div className="flex-1 p-8 flex gap-8">
           {/* Left Column */}
-          <div style={{ flex: '0 0 400px' }}>
+          <div className="flex-none w-96">
             {/* Data Upload Section */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              borderRadius: '12px', 
-              padding: '25px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              marginBottom: '20px'
-            }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', color: '#1e293b' }}>
+            <div className="bg-white rounded-xl p-6 shadow-sm mb-5">
+              <h2 className="text-lg font-semibold mb-5 text-slate-800">
                 Data Upload
               </h2>
               
               {dataUploadItems.map((item, index) => (
                 <div
                   key={index}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '12px 0',
-                    borderBottom: index < dataUploadItems.length - 1 ? '1px solid #f1f5f9' : 'none',
-                    cursor: 'pointer'
-                  }}
+                  className={`flex items-center py-3 cursor-pointer ${
+                    index < dataUploadItems.length - 1 ? 'border-b border-slate-100' : ''
+                  }`}
                 >
-                  <span style={{ fontSize: '16px', marginRight: '15px' }}>{item.icon}</span>
-                  <span style={{ flex: 1, fontSize: '14px', color: '#334155' }}>{item.text}</span>
-                  <div style={{ display: 'flex', gap: '5px' }}>
+                  <span className="text-base mr-4">{item.icon}</span>
+                  <span className="flex-1 text-sm text-slate-700">{item.text}</span>
+                  <div className="flex gap-1">
                     {item.avatars.map((avatar, avatarIndex) => (
                       <div
                         key={avatarIndex}
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          backgroundColor: '#e2e8f0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '10px'
-                        }}
+                        className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs"
                       >
                         {avatar}
                       </div>
@@ -200,125 +143,75 @@ const Dashboard = () => {
                 </div>
               ))}
               
-              <button style={{
-                marginTop: '15px',
-                padding: '8px 16px',
-                backgroundColor: '#f1f5f9',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '12px',
-                color: '#64748b',
-                cursor: 'pointer'
-              }}>
+              <button className="mt-4 px-4 py-2 bg-slate-100 text-slate-500 rounded-md text-xs cursor-pointer hover:bg-slate-200">
                 Load Summary
               </button>
             </div>
           </div>
 
           {/* Right Column */}
-          <div style={{ flex: 1 }}>
+          <div className="flex-1">
             {/* KPI Section */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              borderRadius: '12px', 
-              padding: '25px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              marginBottom: '20px'
-            }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', color: '#1e293b' }}>
+            <div className="bg-white rounded-xl p-6 shadow-sm mb-5">
+              <h2 className="text-lg font-semibold mb-5 text-slate-800">
                 Key Performance Indicators
               </h2>
               
               {kpiData.map((kpi, index) => (
                 <div
                   key={index}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '15px 0',
-                    borderBottom: index < kpiData.length - 1 ? '1px solid #f1f5f9' : 'none'
-                  }}
+                  className={`flex items-center justify-between py-4 ${
+                    index < kpiData.length - 1 ? 'border-b border-slate-100' : ''
+                  }`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: kpi.color,
-                      marginRight: '15px'
-                    }}></div>
-                    <span style={{ fontSize: '14px', color: '#334155' }}>{kpi.label}</span>
+                  <div className="flex items-center">
+                    <div className={`w-2 h-2 rounded-full ${kpi.color} mr-4`}></div>
+                    <span className="text-sm text-slate-700">{kpi.label}</span>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>{kpi.period}</span>
+                  <span className="text-xs text-slate-500">{kpi.period}</span>
                 </div>
               ))}
             </div>
 
             {/* Bottom Row */}
-            <div style={{ display: 'flex', gap: '20px' }}>
+            <div className="flex gap-5">
               {/* Recent Updates */}
-              <div style={{ 
-                flex: 1,
-                backgroundColor: 'white', 
-                borderRadius: '12px', 
-                padding: '25px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px', color: '#1e293b' }}>
+              <div className="flex-1 bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="text-base font-semibold mb-4 text-slate-800">
                   Recent Updates
                 </h3>
                 
                 {recentUpdates.map((update, index) => (
                   <div
                     key={index}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      marginBottom: '15px',
-                      cursor: 'pointer'
-                    }}
+                    className="flex items-start mb-4 cursor-pointer"
                   >
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: '#e2e8f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: '12px',
-                      fontSize: '14px'
-                    }}>
+                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center mr-3 text-sm">
                       {update.avatar}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>
+                    <div className="flex-1">
+                      <div className="text-xs text-slate-500 mb-0.5">
                         {update.name} {update.action}
                       </div>
-                      <div style={{ fontSize: '13px', color: '#334155' }}>
+                      <div className="text-xs text-slate-700">
                         {update.description}
                       </div>
                     </div>
-                    <span style={{ fontSize: '16px', color: '#64748b' }}>›</span>
+                    <span className="text-base text-slate-500">›</span>
                   </div>
                 ))}
 
                 {/* Quick Actions */}
-                <div style={{ marginTop: '20px' }}>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="mt-5">
+                  <div className="flex gap-2 flex-wrap">
                     {quickActions.map((action, index) => (
                       <button
                         key={index}
-                        style={{
-                          padding: '8px 12px',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          backgroundColor: action.active ? action.color : '#f1f5f9',
-                          color: action.active ? 'white' : '#64748b',
-                          cursor: 'pointer'
-                        }}
+                        className={`px-3 py-2 rounded-md text-xs cursor-pointer ${
+                          action.active 
+                            ? `${action.color} text-white` 
+                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        }`}
                       >
                         {action.title}
                       </button>
@@ -328,56 +221,29 @@ const Dashboard = () => {
               </div>
 
               {/* Forecast Chart */}
-              <div style={{ 
-                flex: 1,
-                backgroundColor: 'white', 
-                borderRadius: '12px', 
-                padding: '25px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '15px', color: '#1e293b' }}>
+              <div className="flex-1 bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="text-base font-semibold mb-4 text-slate-800">
                   Forecast
                 </h3>
                 
                 {/* Simple Bar Chart */}
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'end', 
-                  height: '120px', 
-                  gap: '15px',
-                  marginBottom: '20px'
-                }}>
+                <div className="flex items-end h-32 gap-4 mb-5">
                   {forecastData.map((data, index) => (
-                    <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div key={index} className="flex-1 flex flex-col items-center">
                       <div
-                        style={{
-                          width: '100%',
-                          height: `${data.value}px`,
-                          backgroundColor: '#3b82f6',
-                          borderRadius: '4px 4px 0 0',
-                          marginBottom: '8px'
-                        }}
+                        className="w-full bg-blue-500 rounded-t mb-2"
+                        style={{ height: `${data.value}px` }}
                       ></div>
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>{data.month}</span>
+                      <span className="text-xs text-slate-500">{data.month}</span>
                     </div>
                   ))}
                 </div>
                 
-                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '15px', textAlign: 'center' }}>
+                <p className="text-xs text-slate-500 mb-4 text-center">
                   Run a forecast to review future trends
                 </p>
                 
-                <button style={{
-                  width: '100%',
-                  padding: '10px',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}>
+                <button className="w-full py-2.5 bg-blue-500 text-white rounded-md text-xs font-medium cursor-pointer hover:bg-blue-600">
                   Initiate Forecast
                 </button>
               </div>
