@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-
+import React, { useState } from "react";
 import {
   BarChart3,
   Building2,
@@ -34,9 +32,12 @@ import {
   BarChart as RechartsBarChart,
 } from "recharts";
 
+// Utility function for className merging
 const cn = (...classes) => {
   return classes.filter(Boolean).join(" ");
 };
+
+// Sample data for charts
 const disbursementData = [
   { month: "Jan", amount: 245000, loans: 45 },
   { month: "Feb", amount: 380000, loans: 67 },
@@ -51,12 +52,14 @@ const disbursementData = [
   { month: "Nov", amount: 920000, loans: 172 },
   { month: "Dec", amount: 1050000, loans: 195 },
 ];
+
 const delinquencyData = [
   { name: "Current", value: 82.5, count: 1650, color: "#059669" },
   { name: "1-30 Days", value: 9.2, count: 184, color: "#f59e0b" },
   { name: "31-60 Days", value: 5.1, count: 102, color: "#ef4444" },
   { name: "60+ Days", value: 3.2, count: 64, color: "#dc2626" },
 ];
+
 const acceptanceData = [
   { month: "Jan", accepted: 145, rejected: 89, total: 234 },
   { month: "Feb", accepted: 189, rejected: 67, total: 256 },
@@ -71,8 +74,8 @@ const acceptanceData = [
   { month: "Nov", accepted: 378, rejected: 203, total: 581 },
   { month: "Dec", accepted: 412, rejected: 234, total: 646 },
 ];
-// (All component definitions remain unchanged, including Sidebar, SearchBar, MetricCard, LoanDisbursementChart, DelinquencyChart, AcceptanceChart)
-// ... [TRUNCATED HERE FOR BREVITY — keep all existing components untouched]
+
+// Sidebar Component
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const navigationItems = [
     { title: "Dashboard", href: "/", icon: Home, active: true },
@@ -492,21 +495,9 @@ const AcceptanceChart = () => {
   );
 };
 
+// Main Dashboard Component
 const Dashboard = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [kpiData, setKpiData] = useState(null);
-  const [kpis, setKpis] = useState(null);
-useEffect(() => {
-  axios.get('http://localhost:8080/api/api/kpis') // FULL URL to be safe
-    .then(res => {
-      console.log("KPI response:", res.data);
-      setKpiData(res.data);
-    })
-    .catch(err => {
-      console.error("Error fetching KPI data:", err.message);
-    });
-}, []);
-
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -547,17 +538,22 @@ useEffect(() => {
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 
       <main className="flex-1 overflow-auto">
+        {/* Header */}
         <div className="border-b border-slate-200 bg-white px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
+              <h1 className="text-2xl font-bold text-slate-800">
+                Dashboard Overview
+              </h1>
               <p className="text-slate-600">{currentDate}</p>
             </div>
+
             <div className="flex items-center gap-4">
               <button className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100">
                 <Bell className="h-5 w-5" />
                 <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500"></span>
               </button>
+
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-emerald-600"></div>
                 <div className="text-sm">
@@ -567,41 +563,57 @@ useEffect(() => {
               </div>
             </div>
           </div>
+
           <div className="mt-4">
             <SearchBar />
           </div>
         </div>
 
+        {/* Main Content */}
         <div className="p-6">
+          {/* Key Metrics Row */}
           <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               title="Total Portfolio"
-              value={kpiData ? kpiData.total_disbursed : "Loading..."}
+              value="₹12.5M"
+              change={{ value: 8.2, type: "increase", period: "last month" }}
               icon={DollarSign}
             />
+
             <MetricCard
               title="Active Loans"
-              value={kpiData ? kpiData.active_loans : "Loading..."}
+              value={2847}
+              change={{ value: 5.3, type: "increase", period: "last month" }}
               icon={CreditCard}
             />
+
             <MetricCard
               title="Collection Rate"
-              value={kpiData ? `${kpiData.collection_rate}%` : "Loading..."}
+              value="94.2%"
+              change={{ value: 2.1, type: "increase", period: "last month" }}
               icon={CheckCircle}
             />
+
             <MetricCard
               title="New Customers"
-              value={kpiData ? kpiData.new_customers : "Loading..."}
+              value={234}
+              change={{ value: -3.8, type: "decrease", period: "last month" }}
               icon={Users}
             />
           </div>
 
+          {/* Charts Section */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Loan Disbursement Chart */}
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-800">Loan Disbursement Trend</h3>
-                  <p className="text-sm text-slate-600">Monthly disbursement amounts over the past year</p>
+                  <h3 className="text-lg font-semibold text-slate-800">
+                    Loan Disbursement Trend
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Monthly disbursement amounts over the past year
+                  </p>
                 </div>
                 <div className="rounded-lg bg-emerald-50 p-2">
                   <TrendingUp className="h-5 w-5 text-emerald-600" />
@@ -610,11 +622,16 @@ useEffect(() => {
               <LoanDisbursementChart />
             </div>
 
+            {/* Delinquency Chart */}
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-800">EMI Delinquency Status</h3>
-                  <p className="text-sm text-slate-600">Customer payment status breakdown</p>
+                  <h3 className="text-lg font-semibold text-slate-800">
+                    EMI Delinquency Status
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Customer payment status breakdown
+                  </p>
                 </div>
                 <div className="rounded-lg bg-amber-50 p-2">
                   <AlertTriangle className="h-5 w-5 text-amber-600" />
@@ -624,12 +641,18 @@ useEffect(() => {
             </div>
           </div>
 
+          {/* Additional Metrics and Charts */}
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Loan Acceptance Rate Chart */}
             <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-800">Loan Application Status</h3>
-                  <p className="text-sm text-slate-600">Acceptance vs rejection rates over time</p>
+                  <h3 className="text-lg font-semibold text-slate-800">
+                    Loan Application Status
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Acceptance vs rejection rates over time
+                  </p>
                 </div>
                 <div className="rounded-lg bg-blue-50 p-2">
                   <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -638,18 +661,22 @@ useEffect(() => {
               <AcceptanceChart />
             </div>
 
+            {/* Quick Stats */}
             <div className="space-y-6">
               <MetricCard
                 title="Avg Loan Amount"
-                value={kpiData ? kpiData.average_loan_per_customer : "Loading..."}
+                value="₹45,300"
                 subtitle="per customer"
                 icon={Banknote}
               />
+
               <MetricCard
                 title="Monthly Collections"
                 value="₹2.8M"
+                change={{ value: 12.5, type: "increase", period: "last month" }}
                 icon={TrendingUp}
               />
+
               <MetricCard
                 title="Branches Active"
                 value={237}
@@ -659,20 +686,28 @@ useEffect(() => {
             </div>
           </div>
 
+          {/* Recent Activity */}
           <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-4 text-lg font-semibold text-slate-800">Recent Activity</h3>
+            <h3 className="mb-4 text-lg font-semibold text-slate-800">
+              Recent Activity
+            </h3>
             <div className="space-y-3">
               {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
-                  <div className={`h-2 w-2 rounded-full ${
-                    activity.color === "emerald"
-                      ? "bg-emerald-500"
-                      : activity.color === "blue"
-                      ? "bg-blue-500"
-                      : activity.color === "red"
-                      ? "bg-red-500"
-                      : "bg-purple-500"
-                  }`}></div>
+                <div
+                  key={index}
+                  className="flex items-center gap-3 rounded-lg border border-slate-100 p-3"
+                >
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      activity.color === "emerald"
+                        ? "bg-emerald-500"
+                        : activity.color === "blue"
+                          ? "bg-blue-500"
+                          : activity.color === "red"
+                            ? "bg-red-500"
+                            : "bg-purple-500"
+                    }`}
+                  ></div>
                   <div className="flex-1">
                     <p className="text-sm text-slate-800">{activity.message}</p>
                     <p className="text-xs text-slate-500">{activity.time}</p>
