@@ -114,7 +114,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="text-lg font-bold text-slate-800">
-                FinanceFlow
+                FinSight
               </span>
               <span className="text-xs text-slate-500">Microfinance</span>
             </div>
