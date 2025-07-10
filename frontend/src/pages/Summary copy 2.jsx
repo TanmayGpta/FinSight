@@ -534,10 +534,9 @@ const AcceptanceChart = () => {
 const Dashboard = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [kpiData, setKpiData] = useState(null);
-  const [globalKpiData, setGlobalKpiData] = useState(null); // Added for global KPIs
   const [selectedBranch, setSelectedBranch] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
     axios
       .get(`http://localhost:8000/api/api/kpis`, {
         params: selectedBranch ? { branch: selectedBranch.branch } : {},
@@ -546,13 +545,7 @@ const Dashboard = () => {
       .catch((err) => console.error("Failed to fetch KPIs", err));
   }, [selectedBranch]);
 
-  // Added: Fetch global KPI data on mount
-  useEffect(() => {
-    axios
-      .get(`http://localhost:8000/api/api/kpis`)
-      .then((res) => setGlobalKpiData(res.data))
-      .catch((err) => console.error("Failed to fetch global KPIs", err));
-  }, []);
+
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -621,119 +614,119 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="p-6">
-            <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricCard
-                title="Total Portfolio"
-                value={kpiData ? kpiData.total_disbursed : "Loading..."}
-                icon={IndianRupee}
-              />
-              <MetricCard
-                title="Active Loans"
-                value={kpiData ? kpiData.active_loans : "Loading..."}
-                icon={CreditCard}
-              />
-              <MetricCard
-                title="Collection Rate"
-                value={kpiData ? `${kpiData.collection_rate}%` : "Loading..."}
-                icon={CheckCircle}
-              />
-              <MetricCard
-                title="New Customers"
-                value={globalKpiData ? globalKpiData.new_customers : "Loading..."} // Updated to use globalKpiData
-                change={{ value: -3.8, type: "decrease", period: "last month" }}
-                icon={Users}
-              />
+        <div className="p-6">
+          <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Total Portfolio"
+              value={kpiData ? kpiData.total_disbursed : "Loading..."}
+              icon={IndianRupee}
+            />
+            <MetricCard
+              title="Active Loans"
+              value={kpiData ? kpiData.active_loans : "Loading..."}
+              icon={CreditCard}
+            />
+            <MetricCard
+              title="Collection Rate"
+              value={kpiData ? `${kpiData.collection_rate}%` : "Loading..."}
+              icon={CheckCircle}
+            />
+            <MetricCard
+              title="New Customers"
+              value={kpiData ? kpiData.new_customers : "Loading..."}
+              change={{ value: -3.8, type: "decrease", period: "last month" }}
+              icon={Users}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-800">Loan Disbursement Trend</h3>
+                  <p className="text-sm text-slate-600">Monthly disbursement amounts over the past year</p>
+                </div>
+                <div className="rounded-lg bg-emerald-50 p-2">
+                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                </div>
+              </div>
+              <LoanDisbursementChart />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800">Loan Disbursement Trend</h3>
-                    <p className="text-sm text-slate-600">Monthly disbursement amounts over the past year</p>
-                  </div>
-                  <div className="rounded-lg bg-emerald-50 p-2">
-                    <TrendingUp className="h-5 w-5 text-emerald-600" />
-                  </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-800">EMI Delinquency Status</h3>
+                  <p className="text-sm text-slate-600">Customer payment status breakdown</p>
                 </div>
-                <LoanDisbursementChart />
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800">EMI Delinquency Status</h3>
-                    <p className="text-sm text-slate-600">Customer payment status breakdown</p>
-                  </div>
-                  <div className="rounded-lg bg-amber-50 p-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                  </div>
+                <div className="rounded-lg bg-amber-50 p-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
                 </div>
-                <DelinquencyChart />
               </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800">Loan Application Status</h3>
-                    <p className="text-sm text-slate-600">Acceptance vs rejection rates over time</p>
-                  </div>
-                  <div className="rounded-lg bg-blue-50 p-2">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
-                  </div>
-                </div>
-                <AcceptanceChart />
-              </div>
-
-              <div className="space-y-6">
-                <MetricCard
-                  title="Avg Loan Amount"
-                  value={kpiData ? kpiData.average_loan_per_customer : "Loading..."}
-                  subtitle="per customer"
-                  icon={Banknote}
-                />
-                <MetricCard
-                  title="Monthly Collections"
-                  value="₹2.8M"
-                  icon={TrendingUp}
-                />
-                <MetricCard
-                  title="Branches Active"
-                  value={237}
-                  subtitle="across regions"
-                  icon={CheckCircle}
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-semibold text-slate-800">Recent Activity</h3>
-              <div className="space-y-3">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
-                    <div className={`h-2 w-2 rounded-full ${
-                      activity.color === "emerald"
-                        ? "bg-emerald-500"
-                        : activity.color === "blue"
-                        ? "bg-blue-500"
-                        : activity.color === "red"
-                        ? "bg-red-500"
-                        : "bg-purple-500"
-                    }`}></div>
-                    <div className="flex-1">
-                      <p className="text-sm text-slate-800">{activity.message}</p>
-                      <p className="text-xs text-slate-500">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DelinquencyChart />
             </div>
           </div>
-        </main>
-      </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-800">Loan Application Status</h3>
+                  <p className="text-sm text-slate-600">Acceptance vs rejection rates over time</p>
+                </div>
+                <div className="rounded-lg bg-blue-50 p-2">
+                  <CheckCircle className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+              <AcceptanceChart />
+            </div>
+
+            <div className="space-y-6">
+              <MetricCard
+                title="Avg Loan Amount"
+                value={kpiData ? kpiData.average_loan_per_customer : "Loading..."}
+                subtitle="per customer"
+                icon={Banknote}
+              />
+              <MetricCard
+                title="Monthly Collections"
+                value="₹2.8M"
+                icon={TrendingUp}
+              />
+              <MetricCard
+                title="Branches Active"
+                value={237}
+                subtitle="across regions"
+                icon={CheckCircle}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-semibold text-slate-800">Recent Activity</h3>
+            <div className="space-y-3">
+              {recentActivities.map((activity, index) => (
+                <div key={index} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
+                  <div className={`h-2 w-2 rounded-full ${
+                    activity.color === "emerald"
+                      ? "bg-emerald-500"
+                      : activity.color === "blue"
+                      ? "bg-blue-500"
+                      : activity.color === "red"
+                      ? "bg-red-500"
+                      : "bg-purple-500"
+                  }`}></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-slate-800">{activity.message}</p>
+                    <p className="text-xs text-slate-500">{activity.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
     </BranchContext.Provider>
   );
 };

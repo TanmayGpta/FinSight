@@ -148,3 +148,129 @@ def get_kpis(branch: str = Query(None)):
 
     except Exception as e:
         return {"error": str(e)}
+    
+@router.get("/api/delinquency")
+def get_delinquency(branch: str = Query(None)):
+    try:
+        conn = connect(
+            host="localhost",
+            user="root",
+            password="BtKQ@448",
+            database="FinSight"
+        )
+        cursor = conn.cursor(dictionary=True)
+
+        # Step 1: Get max dpd_days to scale
+        scale_query = "SELECT MAX(dpd_days) AS max_dpd FROM arrears WHERE dpd_days IS NOT NULL"
+        cursor.execute(scale_query)
+        max_dpd = cursor.fetchone()["max_dpd"] or 1
+        scale_factor = 90 / max_dpd if max_dpd > 90 else 1
+
+        # Step 2: Get delinquent customers (grouped into scaled buckets)
+        delinquency_query = f"""
+        SELECT
+            CASE
+                WHEN ROUND(a.dpd_days * {scale_factor}) BETWEEN 1 AND 30 THEN '1-30 Days'
+                WHEN ROUND(a.dpd_days * {scale_factor}) BETWEEN 31 AND 60 THEN '31-60 Days'
+                ELSE '60+ Days'
+            END AS bucket,
+            COUNT(DISTINCT c.id) AS customer_count
+        FROM arrears a
+        JOIN client c ON a.loan_id = c.id
+        JOIN office o ON c.office_id = o.id
+        WHERE a.dpd_days > 0
+        """
+
+        params = []
+        if branch:
+            delinquency_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            params.append(branch.strip())
+
+        delinquency_query += " GROUP BY bucket"
+        cursor.execute(delinquency_query, params)
+        bucket_results = cursor.fetchall()
+
+        # Step 3: Get total clients (filtered by branch if needed)
+        total_clients_query = """
+        SELECT COUNT(DISTINCT c.id) AS total
+        FROM client c
+        JOIN office o ON c.office_id = o.id
+        """
+        if branch:
+            total_clients_query += " WHERE SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            cursor.execute(total_clients_query, (branch.strip(),))
+        else:
+            cursor.execute(total_clients_query)
+        total_clients = cursor.fetchone()["total"]
+
+        # Step 4: Get delinquent client IDs
+        delinquent_ids_query = """
+        SELECT DISTINCT c.id
+        FROM arrears a
+        JOIN client c ON a.loan_id = c.id
+        JOIN office o ON c.office_id = o.id
+        WHERE a.dpd_days > 0
+        """
+        if branch:
+            delinquent_ids_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            cursor.execute(delinquent_ids_query, (branch.strip(),))
+        else:
+            cursor.execute(delinquent_ids_query)
+
+        delinquent_ids = {row["id"] for row in cursor.fetchall()}
+        delinquent_count = len(delinquent_ids)
+
+        # Step 5: Current = total clients - delinquent clients
+        current_count = max(total_clients - delinquent_count, 0)
+
+        # Build final data array
+        total_with_current = current_count + sum(b["customer_count"] for b in bucket_results)
+
+        color_map = {
+            "Current": "#059669",
+            "1-30 Days": "#f59e0b",
+            "31-60 Days": "#ef4444",
+            "60+ Days": "#dc2626"
+        }
+
+        data = [
+            {
+                "name": "Current",
+                "value": round((current_count / total_with_current) * 100, 1) if total_with_current else 0.0,
+                "count": current_count,
+                "color": color_map["Current"]
+            }
+        ]
+
+        for b in bucket_results:
+            data.append({
+                "name": b["bucket"],
+                "value": round((b["customer_count"] / total_with_current) * 100, 1) if total_with_current else 0.0,
+                "count": b["customer_count"],
+                "color": color_map[b["bucket"]]
+            })
+
+        cursor.close()
+        conn.close()
+        return data
+    
+
+    except Exception as e:
+        return {"error": str(e)}
+    
+@router.get("/api/branches")
+def get_branches():
+    try:
+        conn = connect(
+            host="localhost",
+            user="root",
+            password="BtKQ@448",
+            database="FinSight"
+        )
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT DISTINCT SUBSTRING_INDEX(Branch, ':', -1) AS branch, Zonal_Head as zonal_head FROM org")
+        return cursor.fetchall()
+    except Exception as e:
+        return {"error": str(e)}
+
+
