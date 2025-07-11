@@ -75,16 +75,18 @@ const acceptanceData = [
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const navigationItems = [
     { title: "Dashboard", href: "/", icon: Home, active: true },
+    { title: "Forecast", href: "/forecast", icon: BarChart3, active: false },
     {
       title: "Loan Management",
       href: "/loans",
       icon: CreditCard,
       active: false,
     },
+    
     { title: "Customers", href: "/customers", icon: Users, active: false },
     { title: "Branches", href: "/branches", icon: Building2, active: false },
     { title: "Reports", href: "/reports", icon: FileText, active: false },
-    { title: "Analytics", href: "/analytics", icon: BarChart3, active: false },
+    
     {
       title: "Collections",
       href: "/collections",
@@ -162,7 +164,7 @@ const SearchBar = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8000/api/api/branches")
+      .get("http://localhost:8080/api/api/branches")
       .then((res) => {
         const cleaned = res.data
           .filter((b) => typeof b.branch === "string")
@@ -230,8 +232,36 @@ const SearchBar = () => {
           <Filter className="w-4 h-4 inline mr-1" />
           Filters
         </button>
-      </div>
 
+              {/* Quick Filter Chips */}
+      <div className="hidden md:flex items-center gap-2">
+        {[
+          { label: "All Branches", isActive: !selectedBranch, onClick: () => { setSelectedBranch(null); setSearchQuery(""); } },
+          
+          ...(selectedBranch
+            ? [
+                { label: selectedBranch.short_name, isActive: true },
+                { label: `Zonal Head: ${selectedBranch.zonal_head}`, isActive: false },
+              ]
+            : []),
+        { label: "Active", isActive: false },
+        ].map(({ label, isActive, onClick }) => (
+          <button
+            key={label}
+            onClick={onClick}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              isActive
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+      
       {selectedBranch && (
         <div className="flex items-center gap-2 mt-2">
           <span className="bg-slate-100 text-slate-700 text-xs px-3 py-1 rounded-full">
@@ -326,7 +356,7 @@ const MetricCard = ({
 // Loan Disbursement Chart Component
 const LoanDisbursementChart = () => {
   const formatCurrency = (value) => {
-    if (value >= 1000000) return `₹${(value / 1000000).toFixed(1)}M`;
+    if (value >= 100000) return `₹${(value / 20000).toFixed(1)}M`;
     if (value >= 1000) return `₹${(value / 1000).toFixed(0)}K`;
     return `₹${value}`;
   };
@@ -394,7 +424,7 @@ const DelinquencyChart = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8000/api/api/delinquency`, {
+      .get(`http://localhost:8080/api/api/delinquency`, {
         params: selectedBranch ? { branch: selectedBranch.branch } : {},
       })
       .then((res) => setDelinquencyData(res.data))
@@ -539,7 +569,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8000/api/api/kpis`, {
+      .get(`http://localhost:8080/api/api/kpis`, {
         params: selectedBranch ? { branch: selectedBranch.branch } : {},
       })
       .then((res) => setKpiData(res.data))
@@ -549,7 +579,7 @@ const Dashboard = () => {
   // Added: Fetch global KPI data on mount
   useEffect(() => {
     axios
-      .get(`http://localhost:8000/api/api/kpis`)
+      .get(`http://localhost:8080/api/api/kpis`)
       .then((res) => setGlobalKpiData(res.data))
       .catch((err) => console.error("Failed to fetch global KPIs", err));
   }, []);
