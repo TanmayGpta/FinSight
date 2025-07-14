@@ -1,22 +1,28 @@
 import {
-  BarChart3,  Building2,CreditCard,DollarSign,FileText,Home,PieChart,Settings,TrendingUp,Users
+  BarChart3, Building2, CreditCard, DollarSign, FileText, Home, PieChart, Settings, TrendingUp, Users
 } from "lucide-react";
+import { useLocation } from "react-router-dom"; // Add this import
 
 const cn = (...classes) => {
   return classes.filter(Boolean).join(" ");
 };
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
+  const location = useLocation(); // Get current route location
+  
   const navigationItems = [
-    { title: "Dashboard", href: "/", icon: Home, active: true },
-    { title: "Forecast", href: "/forecast", icon: BarChart3, active: false },
-    {title: "Loan Management",href: "/loans",icon: CreditCard,active: false,},   
-    { title: "Customers", href: "/customers", icon: Users, active: false },
-    { title: "Branches", href: "/branches", icon: Building2, active: false },
-    { title: "Reports", href: "/reports", icon: FileText, active: false }, 
-    {title: "Collections",href: "/collections",icon: TrendingUp,active: false,},
-    { title: "Settings", href: "/settings", icon: Settings, active: false },
-  ];
+    { title: "Dashboard", href: "/", icon: Home },
+    { title: "Forecast", href: "/forecast", icon: BarChart3 },
+    { title: "Clients", href: "/clients", icon: Users },
+    { title: "Loan Management", href: "/loans", icon: CreditCard },
+    { title: "Branches", href: "/branches", icon: Building2 },
+    { title: "Reports", href: "/reports", icon: FileText },
+    { title: "Collections", href: "/collections", icon: TrendingUp },
+    { title: "Settings", href: "/settings", icon: Settings },
+  ].map(item => ({
+    ...item,
+    active: location.pathname === item.href
+  }));
 
   return (
     <div
