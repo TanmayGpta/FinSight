@@ -1,9 +1,10 @@
 import React, { useState } from "react";
+import Sidebar from "../components/ui/SideBar";
 import {
   BarChart3,
   Building2,
   CreditCard,
-  DollarSign,
+  IndianRupee,
   FileText,
   Home,
   PieChart,
@@ -28,13 +29,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  Area,
-  AreaChart,
-  Bar,
-  BarChart as RechartsBarChart,
   Legend,
   CartesianGrid,
 } from "recharts";
+
+
 
 // Utility function for className merging
 const cn = (...classes) => {
@@ -45,38 +44,38 @@ const cn = (...classes) => {
 const forecastData = {
   disbursement: {
     historical: [
-      { month: "Jan 2025", actual: 850000, predicted: null },
-      { month: "Feb 2025", actual: 920000, predicted: null },
-      { month: "Mar 2025", actual: 1050000, predicted: null },
-      { month: "Apr 2025", actual: 980000, predicted: null },
-      { month: "May 2025", actual: 1120000, predicted: null },
-      { month: "Jun 2025", actual: 1200000, predicted: null },
+      { month: "Jan 2025", actual: 33000000,predicted: null },
+      { month: "Feb 2025", actual: 35000000,predicted: null },
+      { month: "Mar 2025", actual: 30000000,predicted: null },
+      { month: "Apr 2025", actual: 40000000,predicted: null},
+      { month: "May 2025", actual: 45000000,predicted: null },
+      { month: "Jun 2025", actual: 48000000,predicted: null },
     ],
     forecast: [
-      { month: "Jul 2025", actual: null, predicted: 1280000,},
-      { month: "Aug 2025", actual: null, predicted: 1350000,},
-      { month: "Sep 2025", actual: null, predicted: 1420000,},
-      { month: "Oct 2025", actual: null, predicted: 1480000,},
-      { month: "Nov 2025", actual: null, predicted: 1550000,},
-      { month: "Dec 2025", actual: null, predicted: 1620000,},
+      { month: "Jul 2025", actual: null, predicted: 50000000,},
+      { month: "Aug 2025", actual: null, predicted: 58000000,},
+      { month: "Sep 2025", actual: null, predicted: 54200000,},
+      { month: "Oct 2025", actual: null, predicted: 60800000,},
+      { month: "Nov 2025", actual: null, predicted: 62500000,},
+      { month: "Dec 2025", actual: null, predicted: 68200000,},
     ],
   },
   collections: {
     historical: [
-      { month: "Jan 2025", actual: 94.2, predicted: null },
+      { month: "Jan 2025", actual: 92.2, predicted: null },
       { month: "Feb 2025", actual: 95.1, predicted: null },
       { month: "Mar 2025", actual: 93.8, predicted: null },
       { month: "Apr 2025", actual: 96.2, predicted: null },
-      { month: "May 2025", actual: 94.9, predicted: null },
-      { month: "Jun 2025", actual: 95.7, predicted: null },
+      { month: "May 2025", actual: 97.9, predicted: null },
+      { month: "Jun 2025", actual: 86.7, predicted: null },
     ],
     forecast: [
-      { month: "Jul 2025", actual: null, predicted: 96.1, confidence: 0.94 },
-      { month: "Aug 2025", actual: null, predicted: 95.8, confidence: 0.91 },
+      { month: "Jul 2025", actual: null, predicted: 90.1, confidence: 0.94 },
+      { month: "Aug 2025", actual: null, predicted: 93.8, confidence: 0.91 },
       { month: "Sep 2025", actual: null, predicted: 96.4, confidence: 0.88 },
       { month: "Oct 2025", actual: null, predicted: 95.9, confidence: 0.85 },
-      { month: "Nov 2025", actual: null, predicted: 96.2, confidence: 0.82 },
-      { month: "Dec 2025", actual: null, predicted: 95.6, confidence: 0.79 },
+      { month: "Nov 2025", actual: null, predicted: 98.2, confidence: 0.82 },
+      { month: "Dec 2025", actual: null, predicted: 98.6, confidence: 0.79 },
     ],
   },
   customers: {
@@ -85,8 +84,8 @@ const forecastData = {
       { month: "Feb 2025", actual: 2720, predicted: null },
       { month: "Mar 2025", actual: 2847, predicted: null },
       { month: "Apr 2025", actual: 2910, predicted: null },
-      { month: "May 2025", actual: 2980, predicted: null },
-      { month: "Jun 2025", actual: 3120, predicted: null },
+      { month: "May 2025", actual: 3120, predicted: null },
+      { month: "Jun 2025", actual: 2980, predicted: null },
     ],
     forecast: [
       { month: "Jul 2025", actual: null, predicted: 3250,},
@@ -99,20 +98,20 @@ const forecastData = {
   },
   delinquency: {
     historical: [
-      { month: "Jan 2025", actual: 8.2, predicted: null },
-      { month: "Feb 2025", actual: 7.8, predicted: null },
-      { month: "Mar 2025", actual: 9.1, predicted: null },
-      { month: "Apr 2025", actual: 8.5, predicted: null },
-      { month: "May 2025", actual: 7.9, predicted: null },
-      { month: "Jun 2025", actual: 8.3, predicted: null },
+      { month: "Jan 2025", actual: 5.2, predicted: null },
+      { month: "Feb 2025", actual: 4.8, predicted: null },
+      { month: "Mar 2025", actual: 6.1, predicted: null },
+      { month: "Apr 2025", actual: 5.5, predicted: null },
+      { month: "May 2025", actual: 4.9, predicted: null },
+      { month: "Jun 2025", actual: 5.3, predicted: null },
     ],
     forecast: [
-      { month: "Jul 2025", actual: null, predicted: 8.1,},
-      { month: "Aug 2025", actual: null, predicted: 7.6,},
-      { month: "Sep 2025", actual: null, predicted: 8.4,},
-      { month: "Oct 2025", actual: null, predicted: 8.0,},
-      { month: "Nov 2025", actual: null, predicted: 7.7,},
-      { month: "Dec 2025", actual: null, predicted: 8.2,},
+      { month: "Jul 2025", actual: null, predicted: 5.1,},
+      { month: "Aug 2025", actual: null, predicted: 4.6,},
+      { month: "Sep 2025", actual: null, predicted: 3.4,},
+      { month: "Oct 2025", actual: null, predicted: 5.0,},
+      { month: "Nov 2025", actual: null, predicted: 4.7,},
+      { month: "Dec 2025", actual: null, predicted: 5.2,},
     ],
   },
 };
@@ -123,7 +122,7 @@ const forecastOptions = [
     id: "disbursement",
     title: "Loan Disbursement",
     description: "Predict future loan disbursement amounts",
-    icon: DollarSign,
+    icon: IndianRupee,
     color: "emerald",
     unit: "₹",
     format: (val) => `₹${(val / 1000000).toFixed(1)}M`,
@@ -157,94 +156,6 @@ const forecastOptions = [
   },
 ];
 
-// Sidebar Component (same as Dashboard)
-const Sidebar = ({ isCollapsed, setIsCollapsed, currentPage = "forecast" }) => {
-  const navigationItems = [
-    {
-      title: "Dashboard",
-      href: "/",
-      icon: Home,
-      active: currentPage === "dashboard",
-    },
-    { title: "Forecast", href: "/forecast", icon: BarChart3, active: false },
-    {
-      title: "Loan Management",
-      href: "/loans",
-      icon: CreditCard,
-      active: false,
-    },
-    { title: "Customers", href: "/customers", icon: Users, active: false },
-    { title: "Branches", href: "/branches", icon: Building2, active: false },
-    { title: "Reports", href: "/reports", icon: FileText, active: false },
-    {
-      title: "Collections",
-      href: "/collections",
-      icon: TrendingUp,
-      active: false,
-    },
-    { title: "Settings", href: "/settings", icon: Settings, active: false },
-  ];
-
-  return (
-    <div
-      className={cn(
-        "flex h-screen flex-col border-r border-slate-200 bg-white transition-all duration-300",
-        isCollapsed ? "w-16" : "w-64",
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-center border-b border-slate-200 px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
-            <DollarSign className="h-5 w-5 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-slate-800">
-                FinSight
-              </span>
-              <span className="text-xs text-slate-500">Microfinance</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <a
-              key={item.title}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                item.active
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-800",
-              )}
-            >
-              <Icon className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && <span>{item.title}</span>}
-            </a>
-          );
-        })}
-      </nav>
-
-      {/* Collapse Toggle */}
-      <div className="border-t border-slate-200 p-4">
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex w-full items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-50"
-        >
-          <PieChart className="h-5 w-5" />
-          {!isCollapsed && <span className="ml-3 text-sm">Collapse</span>}
-        </button>
-      </div>
-    </div>
-  );
-};
-
 // Forecast Configuration Panel
 const ForecastConfig = ({
   selectedOption,
@@ -252,7 +163,7 @@ const ForecastConfig = ({
   onRunForecast,
   isLoading,
 }) => {
-  const [timeHorizon, setTimeHorizon] = useState("6");
+  
   
 
   return (
