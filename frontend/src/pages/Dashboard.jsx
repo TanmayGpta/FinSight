@@ -5,7 +5,7 @@ const BranchContext = createContext();
 const useBranch = () => useContext(BranchContext);
 
 import {
-CreditCard,TrendingUp,Users,AlertTriangle,Banknote,Bell,CheckCircle,Filter,Search,TrendingDown,IndianRupee,
+CreditCard,TrendingUp,Users,AlertTriangle,Banknote,Bell,CheckCircle,Filter,Search,TrendingDown,IndianRupee,LogIn
 } from "lucide-react";
 import {Area,AreaChart,ResponsiveContainer,Tooltip,XAxis,YAxis,Cell,Pie,PieChart as RechartsPieChart,Bar,BarChart as RechartsBarChart,
 } from "recharts";
@@ -504,10 +504,13 @@ const Dashboard = () => {
                 <p className="text-slate-600">{currentDate}</p>
               </div>
               <div className="flex items-center gap-4">
-                <button className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500"></span>
-                </button>
+                <a
+                  href="/Login" // Replace '/login' with your login page URL
+                  className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 inline-block"
+                >
+                  <LogIn className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full"></span>
+                </a>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-full bg-emerald-600"></div>
                   <div className="text-sm">
