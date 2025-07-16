@@ -1,12 +1,27 @@
 from fastapi import APIRouter, Query
 from mysql.connector import connect
 from datetime import datetime, timedelta
-import os
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from jose import jwt, JWTError
+from .auth import get_current_user
+from typing import Optional
+from fastapi import Query
 
 router = APIRouter()
 
-@router.get("/api/kpis")
-def get_kpis(branch: str = Query(None)):
+@router.get("/kpis")
+def get_kpis(
+    user=Depends(get_current_user),
+    branch: Optional[str] = Query(None)  # ← from frontend search bar
+):
+    print("Authenticated user:", user)
+    print("Requested branch param:", branch)
+
+    # 👇 Override branch only if NOT admin
+    if user["role"] != "admin":
+        branch = user["branch"]
+
     try:
         conn = connect(
             host="localhost",
@@ -16,7 +31,7 @@ def get_kpis(branch: str = Query(None)):
         )
         cursor = conn.cursor(dictionary=True)
 
-        # --------- 1. Total Disbursed, Collected, Active Loans (All-Time) ---------
+        # --- 1. Totals ---
         total_query = """
         SELECT
             SUM(lr.principal_amount) AS total_disbursed,
@@ -38,7 +53,7 @@ def get_kpis(branch: str = Query(None)):
         total_collected = total_result["total_collected"] or 0
         active_loans = total_result["active_loans"]
 
-        # --------- 2. Collection Rate (Till June 30) ---------
+        # --- 2. Collection Rate till June 30 ---
         cutoff_date = datetime(datetime.now().year, 6, 30).strftime("%Y-%m-%d")
         rate_query = """
         SELECT
@@ -54,14 +69,13 @@ def get_kpis(branch: str = Query(None)):
         if branch:
             rate_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
             rate_params.append(branch.strip())
-
         cursor.execute(rate_query, rate_params)
         rate_result = cursor.fetchone()
         expected_till_june = rate_result["expected_till_june"] or 0
         collected_till_june = rate_result["collected_till_june"] or 0
         collection_rate = round((collected_till_june / expected_till_june) * 100, 2) if expected_till_june else 0.0
 
-        # --------- 3. New Customers (June + % change from May) ---------
+        # --- 3. New Customers (June vs May) ---
         today = datetime.today()
         first_of_this_month = datetime(today.year, today.month, 1)
         last_month_end = first_of_this_month - timedelta(days=1)
@@ -69,8 +83,7 @@ def get_kpis(branch: str = Query(None)):
         prev_month_end = last_month_start - timedelta(days=1)
         prev_month_start = datetime(prev_month_end.year, prev_month_end.month, 1)
 
-        # Base query: clients whose first loan was in this window
-        base_new_customer_query = """
+        base_query = """
         SELECT COUNT(DISTINCT c.id) AS count
         FROM loan l
         JOIN client c ON l.client_id = c.id
@@ -82,32 +95,26 @@ def get_kpis(branch: str = Query(None)):
               WHERE l2.client_id = c.id
           )
         """
-
-        # --- June ---
         june_params = [last_month_start, first_of_this_month]
         if branch:
-            base_new_customer_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            base_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
             june_params.append(branch.strip())
-
-        cursor.execute(base_new_customer_query, june_params)
+        cursor.execute(base_query, june_params)
         new_customers = cursor.fetchone()["count"]
 
-        # --- May ---
         may_params = [prev_month_start, last_month_start]
         if branch:
-            may_params.append(branch.strip())  # branch already added in base query
-
-        cursor.execute(base_new_customer_query, may_params)
+            may_params.append(branch.strip())
+        cursor.execute(base_query, may_params)
         prev_customers = cursor.fetchone()["count"]
 
-        # Compute % change safely
-        if prev_customers:
-            customer_change = round(((new_customers - prev_customers) / prev_customers) * 100, 2)
-        else:
-            customer_change = None
+        customer_change = (
+            round(((new_customers - prev_customers) / prev_customers) * 100, 2)
+            if prev_customers else None
+        )
 
-        # --------- 4. Average Loan Per Customer (All Time) ---------
-        avg_loan_query = """
+        # --- 4. Avg Loan Per Customer ---
+        avg_query = """
         SELECT SUM(lr.principal_amount) AS total_disbursed, COUNT(DISTINCT c.id) AS total_customers
         FROM loan_repayment lr
         JOIN loan l ON lr.loan_id = l.id
@@ -115,17 +122,15 @@ def get_kpis(branch: str = Query(None)):
         JOIN office o ON c.office_id = o.id
         """
         if branch:
-            avg_loan_query += " WHERE SUBSTRING_INDEX(o.name, ':', -1) = %s"
-            cursor.execute(avg_loan_query, (branch.strip(),))
+            avg_query += " WHERE SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            cursor.execute(avg_query, (branch.strip(),))
         else:
-            cursor.execute(avg_loan_query)
+            cursor.execute(avg_query)
 
-        avg_loan_result = cursor.fetchone()
-        avg_loan = round(
-            (avg_loan_result["total_disbursed"] or 0) / (avg_loan_result["total_customers"] or 1), 2
-        )
+        avg_result = cursor.fetchone()
+        avg_loan = round((avg_result["total_disbursed"] or 0) / (avg_result["total_customers"] or 1), 2)
 
-        # --------- 5. Zonal Head Info ---------
+        # --- 5. Zonal Head (if applicable) ---
         kpis = {
             "total_disbursed": total_disbursed,
             "total_collected": total_collected,
@@ -149,8 +154,9 @@ def get_kpis(branch: str = Query(None)):
     except Exception as e:
         return {"error": str(e)}
     
-@router.get("/api/delinquency")
-def get_delinquency(branch: str = Query(None)):
+@router.get("/delinquency")
+def get_delinquency(user=Depends(get_current_user)):
+    branch = user["branch"] if user["role"] != "admin" else None
     try:
         conn = connect(
             host="localhost",
@@ -258,7 +264,7 @@ def get_delinquency(branch: str = Query(None)):
     except Exception as e:
         return {"error": str(e)}
     
-@router.get("/api/branches")
+@router.get("/branches")
 def get_branches():
     try:
         conn = connect(
@@ -272,5 +278,40 @@ def get_branches():
         return cursor.fetchall()
     except Exception as e:
         return {"error": str(e)}
+    
+
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
+
+@router.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    conn = connect(host="localhost", user="root", password="BtKQ@448", database="FinSight")
+    cursor = conn.cursor(dictionary=True)
+
+    # Match against org table
+    query = """
+    SELECT SUBSTRING_INDEX(Branch, ':', -1) AS branch, Zonal_Head as zonal_head
+    FROM org
+    WHERE Zonal_Head = %s AND SUBSTRING_INDEX(Branch, ':', -1) = %s
+    """
+    cursor.execute(query, (form_data.username, form_data.password))
+    result = cursor.fetchone()
+
+    if not result:
+        if form_data.username == "admin" and form_data.password == "admin123":
+            result = {"zonal_head": "admin", "branch": None}
+        else:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Build JWT token
+    payload = {
+        "sub": result["zonal_head"],
+        "role": "admin" if result["zonal_head"] == "admin" else "zonal_head",
+        "branch": result["branch"],
+        "exp": datetime.utcnow() + timedelta(hours=12)
+    }
+    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+    return {"access_token": token, "token_type": "bearer"}
 
 

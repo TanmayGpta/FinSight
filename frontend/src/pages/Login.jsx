@@ -9,7 +9,8 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
-
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 // Utility function for className merging
 const cn = (...classes) => {
   return classes.filter(Boolean).join(" ");
@@ -17,7 +18,7 @@ const cn = (...classes) => {
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
     rememberMe: false,
   });
@@ -38,37 +39,49 @@ const Login = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+  const newErrors = {};
 
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
+  if (!formData.username) {
+    newErrors.username = "Username is required";
+  }
 
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
+  if (!formData.password) {
+    newErrors.password = "Password is required";
+  }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!validateForm()) return;
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Redirect to dashboard or handle login success
-      window.location.href = "/";
-    }, 2000);
-  };
+  setIsLoading(true);
+
+  try {
+    const params = new URLSearchParams();
+    params.append("username", formData.username);
+    params.append("password", formData.password);
+
+    const response = await axios.post("http://localhost:8080/api/login", params, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+
+    const { access_token } = response.data;
+    localStorage.setItem("token", access_token);
+    window.location.href = "/";
+  } catch (err) {
+    console.error("Login failed:", err);
+    alert("Login failed: Invalid credentials or server error.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleForgotPassword = () => {
     // Handle forgot password logic
@@ -116,11 +129,11 @@ const Login = () => {
                   <Mail className="h-5 w-5 text-slate-400"/>
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={formData.email}
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  value={formData.username}
                   onChange={handleInputChange}
                   className={cn(
                     "appearance-none block w-full pl-10 pr-3 py-3 border rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors",
@@ -128,7 +141,7 @@ const Login = () => {
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white",
                   )}
-                  placeholder="Enter your User"
+                  placeholder="Enter your Name"
                 />
               </div>
               {errors.email && (

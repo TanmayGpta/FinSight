@@ -1,21 +1,33 @@
-import React, { useState, useEffect,createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import axios from "axios";
 import Sidebar from "../components/ui/SideBar.jsx";
+
 const BranchContext = createContext();
 const useBranch = () => useContext(BranchContext);
 
 import {
-CreditCard,TrendingUp,Users,AlertTriangle,Banknote,Bell,CheckCircle,Filter,Search,TrendingDown,IndianRupee,LogIn
+  CreditCard, TrendingUp, Users, AlertTriangle, Banknote, Bell, CheckCircle,
+  Filter, Search, TrendingDown, IndianRupee, LogIn
 } from "lucide-react";
-import {Area,AreaChart,ResponsiveContainer,Tooltip,XAxis,YAxis,Cell,Pie,PieChart as RechartsPieChart,Bar,BarChart as RechartsBarChart,
+import {
+  Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Cell, Pie, PieChart as RechartsPieChart,
+  Bar, BarChart as RechartsBarChart
 } from "recharts";
 
-const cn = (...classes) => {
-  return classes.filter(Boolean).join(" ");
+const cn = (...classes) => classes.filter(Boolean).join(" ");
+
+const parseJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return null;
+  }
 };
+
 const disbursementData = [
-  { month: "Jan", amount: 245000, loans: 45 },{ month: "Feb", amount: 380000, loans: 67 },{ month: "Mar", amount: 320000, loans: 58 },
-  { month: "Apr", amount: 450000, loans: 82 },{ month: "May", amount: 520000, loans: 95 },{ month: "Jun", amount: 480000, loans: 89 },
+  { month: "Jan", amount: 245000, loans: 45 },{ month: "Feb", amount: 380800, loans: 67 },{ month: "Mar", amount: 320000, loans: 58 },
+  { month: "Apr", amount: 450000, loans: 82 },{ month: "May", amount: 520000, loans: 95 },{ month: "Jun", amount: 480800, loans: 89 },
   { month: "Jul", amount: 590000, loans: 108 },{ month: "Aug", amount: 670000, loans: 125 },{ month: "Sep", amount: 720000, loans: 134 },
   { month: "Oct", amount: 850000, loans: 156 },{ month: "Nov", amount: 920000, loans: 172 },{ month: "Dec", amount: 1050000, loans: 195 },
 ];
@@ -27,7 +39,7 @@ const acceptanceData = [
   { month: "Oct", accepted: 334, rejected: 189, total: 523 },{ month: "Nov", accepted: 378, rejected: 203, total: 581 },{ month: "Dec", accepted: 412, rejected: 234, total: 646 },
 ];
 
-const SearchBar = () => {
+const SearchBar = ({ isAdmin }) => {
   const { selectedBranch, setSelectedBranch } = useBranch();
   const [branches, setBranches] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,7 +47,7 @@ const SearchBar = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8080/api/api/branches")
+      .get("http://localhost:8080/api/branches")
       .then((res) => {
         const cleaned = res.data
           .filter((b) => typeof b.branch === "string")
@@ -52,6 +64,8 @@ const SearchBar = () => {
 
   const handleSearch = (val) => {
     setSearchQuery(val);
+    if (!isAdmin) return;
+
     const match = branches.find(
       (b) => b.short_name.toLowerCase() === val.toLowerCase()
     );
@@ -73,8 +87,9 @@ const SearchBar = () => {
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search branches..."
             className="w-full border rounded-lg pl-10 pr-4 py-2 text-sm border-slate-200"
+            disabled={!isAdmin}
           />
-          {searchQuery && filtered.length > 0 && (
+          {isAdmin && searchQuery && filtered.length > 0 && (
             <ul className="absolute bg-white border border-slate-200 mt-1 rounded shadow max-h-48 overflow-y-auto z-10 w-full">
               {filtered.map((b, i) => (
                 <li
@@ -99,40 +114,41 @@ const SearchBar = () => {
               ? "bg-emerald-50 border-emerald-200 text-emerald-700"
               : "bg-white border-slate-200 text-slate-600"
           }`}
+          disabled={!isAdmin}
         >
           <Filter className="w-4 h-4 inline mr-1" />
           Filters
         </button>
 
-              {/* Quick Filter Chips */}
-      <div className="hidden md:flex items-center gap-2">
-        {[
-          { label: "All Branches", isActive: !selectedBranch, onClick: () => { setSelectedBranch(null); setSearchQuery(""); } },
-          
-          ...(selectedBranch
-            ? [
-                { label: selectedBranch.short_name, isActive: true },
-                { label: `Zonal Head: ${selectedBranch.zonal_head}`, isActive: false },
-              ]
-            : []),
-        { label: "Active", isActive: false },
-        ].map(({ label, isActive, onClick }) => (
-          <button
-            key={label}
-            onClick={onClick}
-            className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-              isActive
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-            )}
-          >
-            {label}
-          </button>
-        ))}
+        {isAdmin && (
+          <div className="hidden md:flex items-center gap-2">
+            {[
+              { label: "All Branches", isActive: !selectedBranch, onClick: () => { setSelectedBranch(null); setSearchQuery(""); } },
+              ...(selectedBranch
+                ? [
+                    { label: selectedBranch.short_name, isActive: true },
+                    { label: `Zonal Head: ${selectedBranch.zonal_head}`, isActive: false },
+                  ]
+                : []),
+              { label: "Active", isActive: false },
+            ].map(({ label, isActive, onClick }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  isActive
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
-      
+
       {selectedBranch && (
         <div className="flex items-center gap-2 mt-2">
           <span className="bg-slate-100 text-slate-700 text-xs px-3 py-1 rounded-full">
@@ -143,9 +159,6 @@ const SearchBar = () => {
     </div>
   );
 };
-
-
-
 // Metric Card Component
 const MetricCard = ({
   title,
@@ -294,13 +307,17 @@ const DelinquencyChart = () => {
   const [delinquencyData, setDelinquencyData] = useState([]);
 
   useEffect(() => {
-    axios
-      .get(`http://localhost:8080/api/api/delinquency`, {
-        params: selectedBranch ? { branch: selectedBranch.branch } : {},
-      })
-      .then((res) => setDelinquencyData(res.data))
-      .catch((err) => console.error("Failed to fetch Delinquency", err));
-  }, [selectedBranch]);
+  axios
+    .get("http://localhost:8080/api/delinquency", {
+      params: selectedBranch ? { branch: selectedBranch.branch } : {},
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+    .then((res) => setDelinquencyData(res.data))
+    .catch((err) => console.error("Failed to fetch Delinquency", err));
+}, [selectedBranch]);
+
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -432,34 +449,48 @@ const AcceptanceChart = () => {
   );
 };
 
+// Remaining components: MetricCard, LoanDisbursementChart, DelinquencyChart, AcceptanceChart
+// (Use your working versions here, unchanged)
+
 const Dashboard = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [kpiData, setKpiData] = useState(null);
-  const [globalKpiData, setGlobalKpiData] = useState(null); // Added for global KPIs
+  const [globalKpiData, setGlobalKpiData] = useState(null);
   const [selectedBranch, setSelectedBranch] = useState(null);
 
+  const token = localStorage.getItem("token");
+  const userInfo = parseJwt(token);
+  const isAdmin = userInfo?.role === "admin";
+
   useEffect(() => {
-    axios
-      .get(`http://localhost:8080/api/api/kpis`, {
-        params: selectedBranch ? { branch: selectedBranch.branch } : {},
-      })
-      .then((res) => setKpiData(res.data))
-      .catch((err) => console.error("Failed to fetch KPIs", err));
+    const timeout = setTimeout(() => {
+      axios
+        .get(`http://localhost:8080/api/kpis`, {
+          params: selectedBranch ? { branch: selectedBranch.branch } : {},
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((res) => setKpiData(res.data))
+        .catch((err) => console.error("Failed to fetch KPIs", err));
+    }, 200);
+
+    return () => clearTimeout(timeout);
   }, [selectedBranch]);
 
-  // Added: Fetch global KPI data on mount
   useEffect(() => {
     axios
-      .get(`http://localhost:8080/api/api/kpis`)
+      .get(`http://localhost:8080/api/kpis`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => setGlobalKpiData(res.data))
       .catch((err) => console.error("Failed to fetch global KPIs", err));
   }, []);
 
   const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
   const recentActivities = [
@@ -493,149 +524,147 @@ const Dashboard = () => {
     <BranchContext.Provider value={{ selectedBranch, setSelectedBranch }}>
       <div className="flex h-screen bg-slate-50">
         <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-
         <main className="flex-1 overflow-auto">
           <div className="border-b border-slate-200 bg-white px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">
-                  Dashboard Overview
-                </h1>
+                <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
                 <p className="text-slate-600">{currentDate}</p>
               </div>
               <div className="flex items-center gap-4">
-                <a
-                  href="/Login" // Replace '/login' with your login page URL
-                  className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 inline-block"
-                >
+                <a href="/Login" className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 inline-block">
                   <LogIn className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full"></span>
                 </a>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-full bg-emerald-600"></div>
                   <div className="text-sm">
-                    <div className="font-medium text-slate-800">Admin User</div>
-                    <div className="text-slate-500">Branch Manager</div>
+                    <div className="font-medium text-slate-800">
+                      {userInfo?.sub || "User"}
+                    </div>
+                    <div className="text-slate-500">
+                      {isAdmin ? "Admin User" : "Branch View"}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
             <div className="mt-4">
-              <SearchBar />
+              <SearchBar isAdmin={isAdmin} />
             </div>
           </div>
 
           <div className="p-6">
-            <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricCard
-                title="Total Portfolio"
-                value={kpiData ? kpiData.total_disbursed : "Loading..."}
-                icon={IndianRupee}
-              />
-              <MetricCard
-                title="Active Loans"
-                value={kpiData ? kpiData.active_loans : "Loading..."}
-                icon={CreditCard}
-              />
-              <MetricCard
-                title="Collection Rate"
-                value={kpiData ? `${kpiData.collection_rate}%` : "Loading..."}
-                icon={CheckCircle}
-              />
-              <MetricCard
-                title="New Customers"
-                value={globalKpiData ? globalKpiData.new_customers : "Loading..."} // Updated to use globalKpiData
-                change={{ value: -3.8, type: "decrease", period: "last month" }}
-                icon={Users}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800">Loan Disbursement Trend</h3>
-                    <p className="text-sm text-slate-600">Monthly disbursement amounts over the past year</p>
-                  </div>
-                  <div className="rounded-lg bg-emerald-50 p-2">
-                    <TrendingUp className="h-5 w-5 text-emerald-600" />
-                  </div>
-                </div>
-                <LoanDisbursementChart />
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800">EMI Delinquency Status</h3>
-                    <p className="text-sm text-slate-600">Customer payment status breakdown</p>
-                  </div>
-                  <div className="rounded-lg bg-amber-50 p-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                  </div>
-                </div>
-                <DelinquencyChart />
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800">Loan Application Status</h3>
-                    <p className="text-sm text-slate-600">Acceptance vs rejection rates over time</p>
-                  </div>
-                  <div className="rounded-lg bg-blue-50 p-2">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
-                  </div>
-                </div>
-                <AcceptanceChart />
-              </div>
-
-              <div className="space-y-6">
-                <MetricCard
-                  title="Avg Loan Amount"
-                  value={kpiData ? kpiData.average_loan_per_customer : "Loading..."}
-                  subtitle="per customer"
-                  icon={Banknote}
-                />
-                <MetricCard
-                  title="Monthly Collections"
-                  value="₹2.8M"
-                  icon={TrendingUp}
-                />
-                <MetricCard
-                  title="Branches Active"
-                  value={237}
-                  subtitle="across regions"
-                  icon={CheckCircle}
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-semibold text-slate-800">Recent Activity</h3>
-              <div className="space-y-3">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
-                    <div className={`h-2 w-2 rounded-full ${
-                      activity.color === "emerald"
-                        ? "bg-emerald-500"
-                        : activity.color === "blue"
-                        ? "bg-blue-500"
-                        : activity.color === "red"
-                        ? "bg-red-500"
-                        : "bg-purple-500"
-                    }`}></div>
-                    <div className="flex-1">
-                      <p className="text-sm text-slate-800">{activity.message}</p>
-                      <p className="text-xs text-slate-500">{activity.time}</p>
+                      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <MetricCard
+                          title="Total Portfolio"
+                          value={kpiData ? kpiData.total_disbursed : "Loading..."}
+                          icon={IndianRupee}
+                        />
+                        <MetricCard
+                          title="Active Loans"
+                          value={kpiData ? kpiData.active_loans : "Loading..."}
+                          icon={CreditCard}
+                        />
+                        <MetricCard
+                          title="Collection Rate"
+                          value={kpiData ? `${kpiData.collection_rate}%` : "Loading..."}
+                          icon={CheckCircle}
+                        />
+                        <MetricCard
+                          title="New Customers"
+                          value={globalKpiData ? globalKpiData.new_customers : "Loading..."} // Updated to use globalKpiData
+                          change={{ value: -3.8, type: "decrease", period: "last month" }}
+                          icon={Users}
+                        />
+                      </div>
+          
+                      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                          <div className="mb-6 flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-semibold text-slate-800">Loan Disbursement Trend</h3>
+                              <p className="text-sm text-slate-600">Monthly disbursement amounts over the past year</p>
+                            </div>
+                            <div className="rounded-lg bg-emerald-50 p-2">
+                              <TrendingUp className="h-5 w-5 text-emerald-600" />
+                            </div>
+                          </div>
+                          <LoanDisbursementChart />
+                        </div>
+          
+                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                          <div className="mb-6 flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-semibold text-slate-800">EMI Delinquency Status</h3>
+                              <p className="text-sm text-slate-600">Customer payment status breakdown</p>
+                            </div>
+                            <div className="rounded-lg bg-amber-50 p-2">
+                              <AlertTriangle className="h-5 w-5 text-amber-600" />
+                            </div>
+                          </div>
+                          <DelinquencyChart />
+                        </div>
+                      </div>
+          
+                      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                        <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                          <div className="mb-6 flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-semibold text-slate-800">Loan Application Status</h3>
+                              <p className="text-sm text-slate-600">Acceptance vs rejection rates over time</p>
+                            </div>
+                            <div className="rounded-lg bg-blue-50 p-2">
+                              <CheckCircle className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </div>
+                          <AcceptanceChart />
+                        </div>
+          
+                        <div className="space-y-6">
+                          <MetricCard
+                            title="Avg Loan Amount"
+                            value={kpiData ? kpiData.average_loan_per_customer : "Loading..."}
+                            subtitle="per customer"
+                            icon={Banknote}
+                          />
+                          <MetricCard
+                            title="Monthly Collections"
+                            value="₹2.8M"
+                            icon={TrendingUp}
+                          />
+                          <MetricCard
+                            title="Branches Active"
+                            value={237}
+                            subtitle="across regions"
+                            icon={CheckCircle}
+                          />
+                        </div>
+                      </div>
+          
+                      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h3 className="mb-4 text-lg font-semibold text-slate-800">Recent Activity</h3>
+                        <div className="space-y-3">
+                          {recentActivities.map((activity, index) => (
+                            <div key={index} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
+                              <div className={`h-2 w-2 rounded-full ${
+                                activity.color === "emerald"
+                                  ? "bg-emerald-500"
+                                  : activity.color === "blue"
+                                  ? "bg-blue-500"
+                                  : activity.color === "red"
+                                  ? "bg-red-500"
+                                  : "bg-purple-500"
+                              }`}></div>
+                              <div className="flex-1">
+                                <p className="text-sm text-slate-800">{activity.message}</p>
+                                <p className="text-xs text-slate-500">{activity.time}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </main>
       </div>
     </BranchContext.Provider>
