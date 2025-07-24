@@ -65,7 +65,7 @@ const handleSubmit = async (e) => {
     params.append("username", formData.username);
     params.append("password", formData.password);
 
-    const response = await axios.post("http://localhost:8080/api/login", params, {
+    const response = await axios.post("/api/login", params, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },

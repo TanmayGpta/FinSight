@@ -14,4 +14,16 @@ export default defineConfig({
       '@tests': path.resolve(__dirname, './src/tests'),
     },
   },
+  // ✨ Added server proxy configuration
+  server: {
+    proxy: {
+      // This tells Vite to forward any request that starts with /api
+      // to your backend server running on http://localhost:8080
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true, // Recommended for virtual hosted sites
+        secure: false,      // Recommended for http targets
+      },
+    },
+  },
 })

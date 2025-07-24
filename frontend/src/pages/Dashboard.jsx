@@ -46,20 +46,29 @@ const SearchBar = ({ isAdmin }) => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    // ✨ Use relative path for the proxy
     axios
-      .get("http://localhost:8080/api/branches")
+      .get("/api/branches")
       .then((res) => {
-        const cleaned = res.data
-          .filter((b) => typeof b.branch === "string")
-          .map((b) => ({
-            ...b,
-            short_name: b.branch.includes(":")
-              ? b.branch.split(":")[1].trim()
-              : b.branch.trim(),
-          }));
-        setBranches(cleaned);
+        if (Array.isArray(res.data)) {
+          const cleaned = res.data
+            .filter((b) => typeof b.branch === "string")
+            .map((b) => ({
+              ...b,
+              short_name: b.branch.includes(":")
+                ? b.branch.split(":")[1].trim()
+                : b.branch.trim(),
+            }));
+          setBranches(cleaned);
+        } else {
+          console.error("Branch fetch returned non-array data:", res.data);
+          setBranches([]);
+        }
       })
-      .catch((err) => console.error("Branch fetch failed", err));
+      .catch((err) => {
+        console.error("Branch fetch failed", err)
+        setBranches([]);
+      });
   }, []);
 
   const handleSearch = (val) => {
@@ -307,16 +316,27 @@ const DelinquencyChart = () => {
   const [delinquencyData, setDelinquencyData] = useState([]);
 
   useEffect(() => {
-  axios
-    .get("http://localhost:8080/api/delinquency", {
-      params: selectedBranch ? { branch: selectedBranch.branch } : {},
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-    .then((res) => setDelinquencyData(res.data))
-    .catch((err) => console.error("Failed to fetch Delinquency", err));
-}, [selectedBranch]);
+    // ✨ Use relative path for the proxy
+    axios
+      .get("/api/delinquency", {
+        params: selectedBranch ? { branch: selectedBranch.branch } : {},
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+            setDelinquencyData(res.data);
+        } else {
+            console.error("Failed to fetch Delinquency, received:", res.data);
+            setDelinquencyData([]);
+        }
+      })
+      .catch((err) => {
+          console.error("Failed to fetch Delinquency", err)
+          setDelinquencyData([]);
+      });
+  }, [selectedBranch]);
 
 
   const CustomTooltip = ({ active, payload }) => {
@@ -464,8 +484,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
+        // ✨ Use relative path for the proxy
       axios
-        .get(`http://localhost:8080/api/kpis`, {
+        .get("/api/kpis", {
           params: selectedBranch ? { branch: selectedBranch.branch } : {},
           headers: {
             Authorization: `Bearer ${token}`,
@@ -476,18 +497,19 @@ const Dashboard = () => {
     }, 200);
 
     return () => clearTimeout(timeout);
-  }, [selectedBranch]);
+  }, [selectedBranch, token]);
 
   useEffect(() => {
+    // ✨ Use relative path for the proxy
     axios
-      .get(`http://localhost:8080/api/kpis`, {
+      .get("/api/kpis", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => setGlobalKpiData(res.data))
       .catch((err) => console.error("Failed to fetch global KPIs", err));
-  }, []);
+  }, [token]);
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -555,116 +577,116 @@ const Dashboard = () => {
           </div>
 
           <div className="p-6">
-                      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                        <MetricCard
-                          title="Total Portfolio"
-                          value={kpiData ? kpiData.total_disbursed : "Loading..."}
-                          icon={IndianRupee}
-                        />
-                        <MetricCard
-                          title="Active Loans"
-                          value={kpiData ? kpiData.active_loans : "Loading..."}
-                          icon={CreditCard}
-                        />
-                        <MetricCard
-                          title="Collection Rate"
-                          value={kpiData ? `${kpiData.collection_rate}%` : "Loading..."}
-                          icon={CheckCircle}
-                        />
-                        <MetricCard
-                          title="New Customers"
-                          value={globalKpiData ? globalKpiData.new_customers : "Loading..."} // Updated to use globalKpiData
-                          change={{ value: -3.8, type: "decrease", period: "last month" }}
-                          icon={Users}
-                        />
-                      </div>
-          
-                      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                          <div className="mb-6 flex items-center justify-between">
-                            <div>
-                              <h3 className="text-lg font-semibold text-slate-800">Loan Disbursement Trend</h3>
-                              <p className="text-sm text-slate-600">Monthly disbursement amounts over the past year</p>
-                            </div>
-                            <div className="rounded-lg bg-emerald-50 p-2">
-                              <TrendingUp className="h-5 w-5 text-emerald-600" />
-                            </div>
-                          </div>
-                          <LoanDisbursementChart />
+                  <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      title="Total Portfolio"
+                      value={kpiData ? kpiData.total_disbursed : "Loading..."}
+                      icon={IndianRupee}
+                    />
+                    <MetricCard
+                      title="Active Loans"
+                      value={kpiData ? kpiData.active_loans : "Loading..."}
+                      icon={CreditCard}
+                    />
+                    <MetricCard
+                      title="Collection Rate"
+                      value={kpiData ? `${kpiData.collection_rate}%` : "Loading..."}
+                      icon={CheckCircle}
+                    />
+                    <MetricCard
+                      title="New Customers"
+                      value={globalKpiData ? globalKpiData.new_customers : "Loading..."} // Updated to use globalKpiData
+                      change={{ value: -3.8, type: "decrease", period: "last month" }}
+                      icon={Users}
+                    />
+                  </div>
+        
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                      <div className="mb-6 flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-800">Loan Disbursement Trend</h3>
+                          <p className="text-sm text-slate-600">Monthly disbursement amounts over the past year</p>
                         </div>
-          
-                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                          <div className="mb-6 flex items-center justify-between">
-                            <div>
-                              <h3 className="text-lg font-semibold text-slate-800">EMI Delinquency Status</h3>
-                              <p className="text-sm text-slate-600">Customer payment status breakdown</p>
-                            </div>
-                            <div className="rounded-lg bg-amber-50 p-2">
-                              <AlertTriangle className="h-5 w-5 text-amber-600" />
-                            </div>
-                          </div>
-                          <DelinquencyChart />
+                        <div className="rounded-lg bg-emerald-50 p-2">
+                          <TrendingUp className="h-5 w-5 text-emerald-600" />
                         </div>
                       </div>
-          
-                      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                          <div className="mb-6 flex items-center justify-between">
-                            <div>
-                              <h3 className="text-lg font-semibold text-slate-800">Loan Application Status</h3>
-                              <p className="text-sm text-slate-600">Acceptance vs rejection rates over time</p>
-                            </div>
-                            <div className="rounded-lg bg-blue-50 p-2">
-                              <CheckCircle className="h-5 w-5 text-blue-600" />
-                            </div>
-                          </div>
-                          <AcceptanceChart />
-                        </div>
-          
-                        <div className="space-y-6">
-                          <MetricCard
-                            title="Avg Loan Amount"
-                            value={kpiData ? kpiData.average_loan_per_customer : "Loading..."}
-                            subtitle="per customer"
-                            icon={Banknote}
-                          />
-                          <MetricCard
-                            title="Monthly Collections"
-                            value="₹2.8M"
-                            icon={TrendingUp}
-                          />
-                          <MetricCard
-                            title="Branches Active"
-                            value={237}
-                            subtitle="across regions"
-                            icon={CheckCircle}
-                          />
-                        </div>
-                      </div>
-          
-                      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h3 className="mb-4 text-lg font-semibold text-slate-800">Recent Activity</h3>
-                        <div className="space-y-3">
-                          {recentActivities.map((activity, index) => (
-                            <div key={index} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
-                              <div className={`h-2 w-2 rounded-full ${
-                                activity.color === "emerald"
-                                  ? "bg-emerald-500"
-                                  : activity.color === "blue"
-                                  ? "bg-blue-500"
-                                  : activity.color === "red"
-                                  ? "bg-red-500"
-                                  : "bg-purple-500"
-                              }`}></div>
-                              <div className="flex-1">
-                                <p className="text-sm text-slate-800">{activity.message}</p>
-                                <p className="text-xs text-slate-500">{activity.time}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <LoanDisbursementChart />
                     </div>
+        
+                    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                      <div className="mb-6 flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-800">EMI Delinquency Status</h3>
+                          <p className="text-sm text-slate-600">Customer payment status breakdown</p>
+                        </div>
+                        <div className="rounded-lg bg-amber-50 p-2">
+                          <AlertTriangle className="h-5 w-5 text-amber-600" />
+                        </div>
+                      </div>
+                      <DelinquencyChart />
+                    </div>
+                  </div>
+        
+                  <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                      <div className="mb-6 flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-800">Loan Application Status</h3>
+                          <p className="text-sm text-slate-600">Acceptance vs rejection rates over time</p>
+                        </div>
+                        <div className="rounded-lg bg-blue-50 p-2">
+                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                        </div>
+                      </div>
+                      <AcceptanceChart />
+                    </div>
+        
+                    <div className="space-y-6">
+                      <MetricCard
+                        title="Avg Loan Amount"
+                        value={kpiData ? kpiData.average_loan_per_customer : "Loading..."}
+                        subtitle="per customer"
+                        icon={Banknote}
+                      />
+                      <MetricCard
+                        title="Monthly Collections"
+                        value="₹2.8M"
+                        icon={TrendingUp}
+                      />
+                      <MetricCard
+                        title="Branches Active"
+                        value={237}
+                        subtitle="across regions"
+                        icon={CheckCircle}
+                      />
+                    </div>
+                  </div>
+        
+                  <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 className="mb-4 text-lg font-semibold text-slate-800">Recent Activity</h3>
+                    <div className="space-y-3">
+                      {recentActivities.map((activity, index) => (
+                        <div key={index} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
+                          <div className={`h-2 w-2 rounded-full ${
+                            activity.color === "emerald"
+                              ? "bg-emerald-500"
+                              : activity.color === "blue"
+                              ? "bg-blue-500"
+                              : activity.color === "red"
+                              ? "bg-red-500"
+                              : "bg-purple-500"
+                          }`}></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-slate-800">{activity.message}</p>
+                            <p className="text-xs text-slate-500">{activity.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
         </main>
       </div>
     </BranchContext.Provider>
