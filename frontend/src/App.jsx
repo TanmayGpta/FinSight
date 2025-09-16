@@ -3,8 +3,8 @@ import Dashboard from './pages/Dashboard.jsx';
 import Forecast from './pages/Forecast.jsx'; 
 import Client from './pages/Client.jsx';
 import Login from './pages/Login.jsx';
-import Branches
- from './pages/Branches.jsx';
+import Branches from './pages/Branches.jsx';
+import RegionalMapPage from './pages/Regions.jsx';
 function App() {
   return (
     <Routes>
@@ -13,6 +13,7 @@ function App() {
       <Route path="/clients" element={<Client />} />
       <Route path="/Login" element={<Login />} />
       <Route path="/Branches" element={<Branches />} />
+      <Route path="/region" element={<RegionalMapPage />} />
     </Routes>
   );
 }

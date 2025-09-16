@@ -14,7 +14,6 @@ export default defineConfig({
       '@tests': path.resolve(__dirname, './src/tests'),
     },
   },
-  // ✨ Added server proxy configuration
   server: {
     proxy: {
       // This tells Vite to forward any request that starts with /api

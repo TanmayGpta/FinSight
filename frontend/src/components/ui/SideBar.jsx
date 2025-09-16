@@ -15,7 +15,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { title: "Forecast", href: "/forecast", icon: BarChart3 },
     { title: "Clients", href: "/clients", icon: Users },
     { title: "Branches", href: "/branches", icon: Building2 },
-    { title: "Loan Management", href: "/loans", icon: CreditCard },   
+    { title: "Regional Map", href: "/region", icon: CreditCard },   
     { title: "Reports", href: "/reports", icon: FileText },
     { title: "Collections", href: "/collections", icon: TrendingUp },
     { title: "Settings", href: "/settings", icon: Settings },
