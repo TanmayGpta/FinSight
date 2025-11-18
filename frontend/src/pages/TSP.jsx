@@ -13,6 +13,7 @@ import Sidebar from "../components/ui/SideBar";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import GoogleMapView from "../components/ui/GoogleMapView";
 
 // Fix for default Leaflet marker icons in React
 import icon from "leaflet/dist/images/marker-icon.png";
@@ -283,56 +284,29 @@ export default function TSP() {
           </div>
 
           {/* Right Map Container */}
-          <div className="w-1/2 bg-slate-100 relative">
-            {/* Render Leaflet Map */}
-            <MapContainer 
-              center={mapCenter} 
-              zoom={13} 
-              scrollWheelZoom={true} 
-              style={{ height: "100%", width: "100%" }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              
-              <MapRecenter center={mapCenter} />
+          {/* Right Map Container (Google Map) */}
+<div className="w-1/2 bg-slate-100 relative">
+  <div className="h-full rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 flex items-stretch">
+    {/* google map occupies full area */}
+    <div className="flex-1">
+      <GoogleMapView 
+        routeData={routeData} 
+        defaultCenter={mapCenter}
+      />
+    </div>
+  </div>
 
-              {/* Render Route Lines */}
-              {routeData && (
-                <Polyline 
-                  positions={polylinePositions} 
-                  color="#059669" // emerald-600
-                  weight={4}
-                  opacity={0.7}
-                  dashArray="10, 10" 
-                />
-              )}
+  {/* Floating badge on map (same as before) */}
+  {!routeData && (
+    <div className="absolute inset-0 flex items-center justify-center bg-slate-100/50 z-[1000] pointer-events-none">
+      <div className="bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 flex items-center gap-2 text-slate-500 text-sm">
+        <MapPin className="h-4 w-4" />
+        Visualize client locations here
+      </div>
+    </div>
+  )}
+</div>
 
-              {/* Render Markers */}
-              {routeData && routeData.optimized_route.map((stop, idx) => (
-                <Marker 
-                  key={idx} 
-                  position={[stop.lat, stop.lon]}
-                >
-                  <Popup>
-                    <div className="text-sm font-bold">{stop.name}</div>
-                    <div className="text-xs text-slate-500">Stop #{idx + 1}</div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-            
-            {/* Floating badge on map */}
-            {!routeData && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100/50 z-[1000] pointer-events-none">
-                     <div className="bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 flex items-center gap-2 text-slate-500 text-sm">
-                        <MapPin className="h-4 w-4" />
-                        Visualize client locations here
-                     </div>
-                </div>
-            )}
-          </div>
         </div>
       </main>
     </div>

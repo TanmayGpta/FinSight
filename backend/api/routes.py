@@ -9,10 +9,13 @@ from fastapi import Query
 import pandas as pd
 from prophet import Prophet
 import requests 
-from mysql.connector import connect
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
-GOOGLE_MAPS_API_KEY = 'AIzaSyDTlQ77xLDt5noMuczG8mrhoWr5vDLd7-g'
+GOOGLE_MAPS_API_KEY = os.getenv("VITE_GOOGLE_API_KEY")
+# GOOGLE_MAPS_API_KEY = 'AIzaSyDTlQ77xLDt5noMuczG8mrhoWr5vDLd7-g'
 import pickle
 from ai_modules.advisor_engine import load_rules, run_inference_engine
 from ai_modules.route_optimizer import optimize_route_greedy, generate_mock_coordinates
@@ -552,70 +555,6 @@ def get_ai_advisor_insights(user=Depends(get_current_user)):
 # 4. PLANNING ROUTES (State Space Search)
 # ==========================================
 
-# --- RESTORED ENDPOINT ---
-@router.get("/planning/route")
-def get_optimized_route(
-    branch: str,
-    num_clients: int = 10
-):
-    """
-    Simulates a set of clients for a branch and calculates the 
-    optimized collection route using Greedy Best-First Search.
-    """
-    try:
-        # 1. Get Branch Info
-        branch_location = {"id": "BRANCH", "name": f"Branch {branch}", "lat": 23.1815, "lon": 85.3055}
-
-        # 2. Fetch Real Client Names from DB
-        conn = connect(
-            host="localhost",
-            user="root",
-            password="BtKQ@448",
-            database="FinSight"
-        )
-        cursor = conn.cursor(dictionary=True)
-        
-        client_query = """
-            SELECT c.id, c.display_name 
-            FROM client c 
-            JOIN office o ON c.office_id = o.id
-            WHERE SUBSTRING_INDEX(o.name, ':', -1) = %s
-            LIMIT %s
-        """
-        cursor.execute(client_query, (branch.strip(), num_clients))
-        db_clients = cursor.fetchall()
-        conn.close()
-
-        if not db_clients:
-            db_clients = [{"id": i, "display_name": f"Client {i}"} for i in range(num_clients)]
-
-        # 3. Generate Mock Locations
-        mock_coords = generate_mock_coordinates(
-            branch_location["lat"], 
-            branch_location["lon"], 
-            len(db_clients), 
-            radius_km=5
-        )
-
-        # 4. Combine Name + Location
-        clients_with_loc = []
-        for i, client in enumerate(db_clients):
-            clients_with_loc.append({
-                "id": client["id"],
-                "name": client["display_name"],
-                "lat": mock_coords[i]["lat"],
-                "lon": mock_coords[i]["lon"]
-            })
-
-        # 5. Run State-Space Search
-        result = optimize_route_greedy(branch_location, clients_with_loc)
-        
-        return result
-
-    except Exception as e:
-        print(f"Error planning route: {e}")
-        return {"error": str(e)}
-
 # --- UPDATE THIS ROUTE ---
 @router.get("/planning/route")
 def get_optimized_route(
@@ -679,7 +618,7 @@ def get_optimized_route(
         result = optimize_route_greedy(
             branch_location, 
             clients_with_loc, 
-            api_key=GOOGLE_MAPS_API_KEY
+            api_key= GOOGLE_MAPS_API_KEY
         )
         
         return result
