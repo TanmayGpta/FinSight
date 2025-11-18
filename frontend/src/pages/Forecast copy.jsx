@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-// --- FIX: Correcting import path casing to match your file structure ---
 import Sidebar from "../components/ui/SideBar";
 import {
   BarChart3,
@@ -34,9 +33,87 @@ import {
   CartesianGrid,
 } from "recharts";
 
+
+
 // Utility function for className merging
 const cn = (...classes) => {
   return classes.filter(Boolean).join(" ");
+};
+
+// Sample forecast data for different prediction types
+const forecastData = {
+  disbursement: {
+    historical: [
+      { month: "Jan 2025", actual: 33000000,predicted: null },
+      { month: "Feb 2025", actual: 35000000,predicted: null },
+      { month: "Mar 2025", actual: 30000000,predicted: null },
+      { month: "Apr 2025", actual: 40000000,predicted: null},
+      { month: "May 2025", actual: 55000000,predicted: null },
+      { month: "Jun 2025", actual: 48000000,predicted: null },
+    ],
+    forecast: [
+      { month: "Jul 2025", actual: null, predicted: 50000000,},
+      { month: "Aug 2025", actual: null, predicted: 58000000,},
+      { month: "Sep 2025", actual: null, predicted: 54200000,},
+      { month: "Oct 2025", actual: null, predicted: 60800000,},
+      { month: "Nov 2025", actual: null, predicted: 62500000,},
+      { month: "Dec 2025", actual: null, predicted: 68200000,},
+    ],
+  },
+  collections: {
+    historical: [
+      { month: "Jan 2025", actual: 92.2, predicted: null },
+      { month: "Feb 2025", actual: 95.1, predicted: null },
+      { month: "Mar 2025", actual: 93.8, predicted: null },
+      { month: "Apr 2025", actual: 96.2, predicted: null },
+      { month: "May 2025", actual: 97.9, predicted: null },
+      { month: "Jun 2025", actual: 86.7, predicted: null },
+    ],
+    forecast: [
+      { month: "Jul 2025", actual: null, predicted: 90.1, confidence: 0.94 },
+      { month: "Aug 2025", actual: null, predicted: 93.8, confidence: 0.91 },
+      { month: "Sep 2025", actual: null, predicted: 96.4, confidence: 0.88 },
+      { month: "Oct 2025", actual: null, predicted: 95.9, confidence: 0.85 },
+      { month: "Nov 2025", actual: null, predicted: 98.2, confidence: 0.82 },
+      { month: "Dec 2025", actual: null, predicted: 98.6, confidence: 0.79 },
+    ],
+  },
+  customers: {
+    historical: [
+      { month: "Jan 2025", actual: 2650, predicted: null },
+      { month: "Feb 2025", actual: 2720, predicted: null },
+      { month: "Mar 2025", actual: 2847, predicted: null },
+      { month: "Apr 2025", actual: 2910, predicted: null },
+      { month: "May 2025", actual: 3120, predicted: null },
+      { month: "Jun 2025", actual: 2980, predicted: null },
+    ],
+    forecast: [
+      { month: "Jul 2025", actual: null, predicted: 3250,},
+      { month: "Aug 2025", actual: null, predicted: 3380,},
+      { month: "Sep 2025", actual: null, predicted: 3510,},
+      { month: "Oct 2025", actual: null, predicted: 3640,},
+      { month: "Nov 2025", actual: null, predicted: 3770,},
+      { month: "Dec 2025", actual: null, predicted: 3900,},
+    ],
+  },
+  delinquency: {
+    historical: [
+      { month: "Jan 2025", actual: 5.2, predicted: null },
+      { month: "Feb 2025", actual: 4.8, predicted: null },
+      { month: "Mar 2025", actual: 6.1, predicted: null },
+      { month: "Apr 2025", actual: 5.5, predicted: null },
+      { month: "May 2025", actual: 4.9, predicted: null },
+      { month: "Jun 2025", actual: 5.3, predicted: null },
+    ],
+    forecast: [
+      { month: "Jul 2025", actual: null, predicted: 5.1,},
+      { month: "Aug 2025", actual: null, predicted: 4.6,},
+      { month: "Sep 2025", actual: null, predicted: 3.4,},
+      { month: "Oct 2025", actual: null, predicted: 5.0,},
+      { month: "Nov 2025", actual: null, predicted: 4.7,},
+      { month: "Dec 2025", actual: null, predicted: 5.2,},
+    ],
+  },
 };
 
 // Forecast options
@@ -48,15 +125,7 @@ const forecastOptions = [
     icon: IndianRupee,
     color: "emerald",
     unit: "₹",
-    format: (val) => {
-      if (val === null || val === undefined) return "";
-      if (val > 1000000) return `₹${(val / 1000000).toFixed(1)}M`;
-      if (val > 1000) return `₹${(val / 1000).toFixed(1)}K`;
-      return `₹${val}`;
-    },
-    apiEndpoint: "/api/forecast/disbursement?branch=087:Deogarh",
-    actualKey: "actual",
-    predictedKey: "predicted",
+    format: (val) => `₹${(val / 1000000).toFixed(1)}M`,
   },
   {
     id: "collections",
@@ -65,13 +134,7 @@ const forecastOptions = [
     icon: Target,
     color: "blue",
     unit: "%",
-    format: (val) => {
-      if (val === null || val === undefined) return "";
-      return `${val.toFixed(1)}%`;
-    },
-    apiEndpoint: "/api/forecast/collections?branch=254:Mungra Badshahpur",
-    actualKey: "actual",
-    predictedKey: "predicted",
+    format: (val) => `${val.toFixed(1)}%`,
   },
   {
     id: "customers",
@@ -80,13 +143,7 @@ const forecastOptions = [
     icon: Users,
     color: "purple",
     unit: "",
-    format: (val) => {
-      if (val === null || val === undefined) return "";
-      return val.toLocaleString();
-    },
-    apiEndpoint: "/api/forecast/growth?branch=167:Gwalior",
-    actualKey: "actual",
-    predictedKey: "predicted",
+    format: (val) => val.toLocaleString(),
   },
   {
     id: "delinquency",
@@ -95,46 +152,9 @@ const forecastOptions = [
     icon: TrendingDown,
     color: "red",
     unit: "%",
-    format: (val) => {
-      if (val === null || val === undefined) return "";
-      return `${val.toFixed(1)}%`;
-    },
-    apiEndpoint: null, // No API, will use static data
-    actualKey: "actual",
-    predictedKey: "predicted",
+    format: (val) => `${val.toFixed(1)}%`,
   },
 ];
-
-// --- HELPER FUNCTION: Converts '2025-09-14' to 'Sep 25' ---
-const formatApiDate = (dateString) => {
-  const date = new Date(dateString);
-  // Using UTC to avoid timezone issues
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    year: "2-digit",
-    timeZone: "UTC",
-  });
-};
-
-// --- Static data for Delinquency fallback ---
-const delinquencyStaticData = {
-  historical: [
-    { month: "Jan 2025", actual: 5.2, predicted: null },
-    { month: "Feb 2025", actual: 4.8, predicted: null },
-    { month: "Mar 2025", actual: 6.1, predicted: null },
-    { month: "Apr 2025", actual: 5.5, predicted: null },
-    { month: "May 2025", actual: 4.9, predicted: null },
-    { month: "Jun 2025", actual: 5.3, predicted: null },
-  ],
-  forecast: [
-    { month: "Jul 2025", actual: null, predicted: 5.1 },
-    { month: "Aug 2025", actual: null, predicted: 4.6 },
-    { month: "Sep 2025", actual: null, predicted: 3.4 },
-    { month: "Oct 2025", actual: null, predicted: 5.0 },
-    { month: "Nov 2025", actual: null, predicted: 4.7 },
-    { month: "Dec 2025", actual: null, predicted: 5.2 },
-  ],
-};
 
 // Forecast Configuration Panel
 const ForecastConfig = ({
@@ -143,6 +163,9 @@ const ForecastConfig = ({
   onRunForecast,
   isLoading,
 }) => {
+  
+  
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-6 flex items-center gap-3">
@@ -177,7 +200,7 @@ const ForecastConfig = ({
                     "flex items-start gap-3 rounded-lg border p-4 text-left transition-colors",
                     isSelected
                       ? "border-emerald-200 bg-emerald-50"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
                   )}
                 >
                   <div
@@ -186,7 +209,7 @@ const ForecastConfig = ({
                       option.color === "emerald" && "bg-emerald-100",
                       option.color === "blue" && "bg-blue-100",
                       option.color === "purple" && "bg-purple-100",
-                      option.color === "red" && "bg-red-100"
+                      option.color === "red" && "bg-red-100",
                     )}
                   >
                     <Icon
@@ -195,7 +218,7 @@ const ForecastConfig = ({
                         option.color === "emerald" && "text-emerald-600",
                         option.color === "blue" && "text-blue-600",
                         option.color === "purple" && "text-purple-600",
-                        option.color === "red" && "text-red-600"
+                        option.color === "red" && "text-red-600",
                       )}
                     />
                   </div>
@@ -213,6 +236,27 @@ const ForecastConfig = ({
           </div>
         </div>
 
+        {/* Time Horizon and Confidence
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Forecast Horizon
+            </label>
+            <select
+              value={timeHorizon}
+              onChange={(e) => setTimeHorizon(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            >
+              <option value="3">3 months</option>
+              <option value="6">6 months</option>
+              <option value="12">12 months</option>
+              <option value="24">24 months</option>
+            </select>
+          </div>
+
+        
+        </div> */}
+
         {/* Run Forecast Button */}
         <div className="flex items-center gap-3">
           <button
@@ -222,7 +266,7 @@ const ForecastConfig = ({
               "flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors",
               !selectedOption || isLoading
                 ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                : "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "bg-emerald-600 text-white hover:bg-emerald-700",
             )}
           >
             {isLoading ? (
@@ -232,6 +276,7 @@ const ForecastConfig = ({
             )}
             {isLoading ? "Running Forecast..." : "Run Forecast"}
           </button>
+
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <Info className="h-4 w-4" />
             <span>Uses advanced ML algorithms for prediction</span>
@@ -244,32 +289,29 @@ const ForecastConfig = ({
 
 // Forecast Results Chart
 const ForecastChart = ({ data, option, isLoading }) => {
-  // --- This component is back to your original logic ---
   if (!data || !option) return null;
 
-  // Combine historical and forecast arrays for the chart
   const combinedData = [...data.historical, ...data.forecast];
-  const { format, actualKey, predictedKey } = option;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      // Find the payload for each line
-      const actualPayload = payload.find((p) => p.dataKey === actualKey);
-      const predictedPayload = payload.find((p) => p.dataKey === predictedKey);
-
+      const dataPoint = payload[0].payload;
       return (
         <div className="rounded-lg border bg-white p-3 shadow-md">
           <p className="font-semibold text-slate-800 mb-2">{label}</p>
           <div className="space-y-1">
-            {actualPayload && actualPayload.value !== null && (
+            {dataPoint.actual !== null && (
               <p className="text-sm text-slate-600">
-                Actual: {format(actualPayload.value)}
+                Actual: {option.format(dataPoint.actual)}
               </p>
             )}
-            {predictedPayload && predictedPayload.value !== null && (
-              <p className="text-sm text-emerald-600">
-                Predicted: {format(predictedPayload.value)}
-              </p>
+            {dataPoint.predicted !== null && (
+              <div>
+                <p className="text-sm text-emerald-600">
+                  Predicted: {option.format(dataPoint.predicted)}
+                </p>
+                
+              </div>
             )}
           </div>
         </div>
@@ -307,12 +349,12 @@ const ForecastChart = ({ data, option, isLoading }) => {
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={combinedData} // --- Back to using combinedData ---
+              data={combinedData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis
-                dataKey="month" // --- Back to using 'month' key ---
+                dataKey="month"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: "#64748b" }}
@@ -321,13 +363,13 @@ const ForecastChart = ({ data, option, isLoading }) => {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: "#64748b" }}
-                tickFormatter={format}
+                tickFormatter={option.format}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Line
                 type="monotone"
-                dataKey={actualKey} // --- Back to original 'actual' key ---
+                dataKey="actual"
                 stroke="#059669"
                 strokeWidth={3}
                 dot={{ fill: "#059669", strokeWidth: 0, r: 4 }}
@@ -336,7 +378,7 @@ const ForecastChart = ({ data, option, isLoading }) => {
               />
               <Line
                 type="monotone"
-                dataKey={predictedKey} // --- Back to original 'predicted' key ---
+                dataKey="predicted"
                 stroke="#3b82f6"
                 strokeWidth={3}
                 strokeDasharray="8 4"
@@ -344,36 +386,6 @@ const ForecastChart = ({ data, option, isLoading }) => {
                 connectNulls={false}
                 name="ML Prediction"
               />
-
-              {/* Confidence lines (will work if data has them) */}
-              {data.forecast.length > 0 &&
-                data.forecast[0].confidence_low && (
-                  <Line
-                    type="monotone"
-                    dataKey="confidence_low"
-                    stroke="#a5f3fc"
-                    strokeWidth={1}
-                    dot={false}
-                    activeDot={false}
-                    connectNulls={false}
-                    name="Confidence Low"
-                    legendType="none"
-                  />
-                )}
-              {data.forecast.length > 0 &&
-                data.forecast[0].confidence_high && (
-                  <Line
-                    type="monotone"
-                    dataKey="confidence_high"
-                    stroke="#a5f3fc"
-                    strokeWidth={1}
-                    dot={false}
-                    activeDot={false}
-                    connectNulls={false}
-                    name="Confidence High"
-                    legendType="none"
-                  />
-                )}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -382,15 +394,15 @@ const ForecastChart = ({ data, option, isLoading }) => {
       {/* Forecast Summary */}
       {!isLoading && data && (
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* --- Back to original logic --- */}
           {data.forecast.slice(0, 3).map((item, index) => (
             <div key={index} className="rounded-lg bg-slate-50 p-4">
               <div className="text-sm font-medium text-slate-600">
                 {item.month}
               </div>
               <div className="text-lg font-bold text-slate-800">
-                {format(item[predictedKey])}
+                {option.format(item.predicted)}
               </div>
+              
             </div>
           ))}
         </div>
@@ -404,72 +416,17 @@ const Forecast = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  // --- Back to original state structure ---
   const [forecastResults, setForecastResults] = useState(null);
 
-  // --- THIS IS THE UPDATED FUNCTION ---
   const handleRunForecast = async () => {
     if (!selectedOption) return;
 
     setIsLoading(true);
-    setForecastResults(null); // Clear previous chart
-
-    const { id, apiEndpoint, actualKey, predictedKey } = selectedOption;
-
-    try {
-      let results;
-
-      if (id === "delinquency" || !apiEndpoint) {
-        // --- CASE 1: Delinquency (use static data) ---
-        console.log("Using static data for Delinquency");
-        await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate delay
-        results = delinquencyStaticData; // Use the static object
-      } else {
-        // --- CASE 2: Fetch REAL data from API ---
-        console.log(`Fetching data for ${id} from ${apiEndpoint}`);
-
-        const API_HOST = "http://127.0.0.1:8080";
-
-        const response = await fetch(`${API_HOST}${apiEndpoint}`);
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(
-            `API Error: ${response.status} - ${err.detail || "Failed to fetch"}`
-          );
-        }
-
-        const apiData = await response.json(); // This is { branch: "...", historical: [...], forecast: [...] }
-
-        // --- The API now sends data in the *exact* format we need ---
-        // We just need to rename the keys to 'actual' and 'predicted'
-        // based on the option selected.
-        
-        const formattedHistorical = apiData.historical.map((item) => ({
-          month: item.month,
-          [actualKey]: item.actual, // Rename 'actual' to 'actual_disbursement' etc.
-          [predictedKey]: null,
-        }));
-
-        const formattedForecast = apiData.forecast.map((item) => ({
-          month: item.month,
-          [actualKey]: null,
-          [predictedKey]: item.predicted, // Rename 'predicted' to 'predicted_disbursement' etc.
-          confidence_low: item.confidence_low,
-          confidence_high: item.confidence_high,
-        }));
-
-        results = {
-          historical: formattedHistorical,
-          forecast: formattedForecast,
-        };
-      }
-
-      setForecastResults(results); // Set the {historical, forecast} object
-    } catch (error) {
-      console.error(`Failed to run forecast: ${error}`);
-    } finally {
+    // Simulate API call delay
+    setTimeout(() => {
+      setForecastResults(forecastData[selectedOption.id]);
       setIsLoading(false);
-    }
+    }, 3000);
   };
 
   return (
@@ -481,7 +438,7 @@ const Forecast = () => {
       />
 
       <main className="flex-1 overflow-auto">
-        {/* Header (Unchanged) */}
+        {/* Header */}
         <div className="border-b border-slate-200 bg-white px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -492,12 +449,14 @@ const Forecast = () => {
                 Advanced machine learning predictions for financial metrics
               </p>
             </div>
+
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-purple-50 px-3 py-1">
                 <span className="text-sm font-medium text-purple-700">
                   AI Powered
                 </span>
               </div>
+
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-emerald-600"></div>
                 <div className="text-sm">
@@ -509,7 +468,7 @@ const Forecast = () => {
           </div>
         </div>
 
-        {/* Main Content (Unchanged) */}
+        {/* Main Content */}
         <div className="p-6 space-y-6">
           {/* Configuration Panel */}
           <ForecastConfig
@@ -528,7 +487,7 @@ const Forecast = () => {
             />
           )}
 
-          {/* Model Information (Unchanged) */}
+          {/* Model Information */}
           {selectedOption && (
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">

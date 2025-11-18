@@ -1,5 +1,5 @@
 import {
-  BarChart3, Building2, CreditCard, DollarSign, FileText, Home, PieChart, Settings, TrendingUp, Users
+  BarChart3, Building2, CreditCard, DollarSign, FileText, Home, PieChart, Settings, TrendingUp, Users,Bot
 } from "lucide-react";
 import { useLocation } from "react-router-dom"; // Add this import
 
@@ -11,14 +11,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation(); // Get current route location
   
   const navigationItems = [
-    { title: "Dashboard", href: "/", icon: Home },
-    { title: "Forecast", href: "/forecast", icon: BarChart3 },
+    { title: "Dashboard", href: "/Dashboard", icon: Home },    
     { title: "Clients", href: "/clients", icon: Users },
     { title: "Branches", href: "/branches", icon: Building2 },
     { title: "Regional Map", href: "/region", icon: CreditCard },   
-    { title: "Reports", href: "/reports", icon: FileText },
-    { title: "Collections", href: "/collections", icon: TrendingUp },
+    { title: "Forecast", href: "/forecast", icon: BarChart3 },
+    { title: "Chatbot", href: "/chatbot", icon: Bot },
     { title: "Settings", href: "/settings", icon: Settings },
+    
   ].map(item => ({
     ...item,
     active: location.pathname === item.href

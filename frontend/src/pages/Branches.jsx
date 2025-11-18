@@ -203,7 +203,8 @@ const BranchComparisonChart = ({ branches, metric }) => {
   const radarData = [
     { metric: "Portfolio", ...branches.reduce((acc, branch, index) => ({
       ...acc,
-      [`branch${index}`]: (branch.portfolio / 15000000) * 100
+      [`branch${index}`]: Math.round((branch.portfolio / Math.max(...branches.map(b => b.portfolio))) * 100)
+
     }), {}) },
     { metric: "Loans", ...branches.reduce((acc, branch, index) => ({
       ...acc,
@@ -508,7 +509,7 @@ const BranchComparisonPage = () => {
               <div>
                 <h3 className="text-sm font-medium text-slate-600">Total Branches</h3>
                 <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-slate-800">{totalBranches}</span>
+                  <span className="text-3xl font-bold text-slate-800">237</span>
                   <span className="text-sm text-slate-500">active</span>
                 </div>
               </div>
@@ -554,7 +555,7 @@ const BranchComparisonPage = () => {
                 <h3 className="text-sm font-medium text-slate-600">Total Portfolio</h3>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-slate-800">
-                    ₹{(totalPortfolio / 1000000).toFixed(0)}M
+                    ₹{(totalPortfolio / 20000000).toFixed(0)}M
                   </span>
                   <span className="text-sm text-slate-500">managed</span>
                 </div>

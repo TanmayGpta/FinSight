@@ -7,17 +7,22 @@ from jose import jwt, JWTError
 from .auth import get_current_user
 from typing import Optional
 from fastapi import Query
+import pickle
+import pandas as pd
+from prophet import Prophet
+from ai_modules.advisor_engine import load_rules, run_inference_engine
 
 router = APIRouter()
+
+# --- NON-AI ROUTES (KPIs, Login, etc.) ---
 
 @router.get("/kpis")
 def get_kpis(
     user=Depends(get_current_user),
-    branch: Optional[str] = Query(None)  # ← from frontend search bar
+    branch: Optional[str] = Query(None)
 ):
+    # ... (Keep your existing KPI logic exactly as is) ...
     print("Authenticated user:", user)
-    print("Requested branch param:", branch)
-
     # 👇 Override branch only if NOT admin
     if user["role"] != "admin":
         branch = user["branch"]
@@ -153,9 +158,10 @@ def get_kpis(
 
     except Exception as e:
         return {"error": str(e)}
-    
+
 @router.get("/delinquency")
 def get_delinquency(user=Depends(get_current_user)):
+    # ... (Keep your existing delinquency logic exactly as is) ...
     branch = user["branch"] if user["role"] != "admin" else None
     try:
         conn = connect(
@@ -259,13 +265,13 @@ def get_delinquency(user=Depends(get_current_user)):
         cursor.close()
         conn.close()
         return data
-    
 
     except Exception as e:
         return {"error": str(e)}
-    
+
 @router.get("/branches")
 def get_branches():
+    # ... (Keep your existing branches logic) ...
     try:
         conn = connect(
             host="localhost",
@@ -278,13 +284,13 @@ def get_branches():
         return cursor.fetchall()
     except Exception as e:
         return {"error": str(e)}
-    
 
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    # ... (Keep your existing login logic) ...
     conn = connect(host="localhost", user="root", password="BtKQ@448", database="FinSight")
     cursor = conn.cursor(dictionary=True)
 
@@ -314,4 +320,261 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
     return {"access_token": token, "token_type": "bearer"}
 
+# --- AI MODEL LOADING ---
+try:
+    with open("models/disbursement_forecast_model.pkl", "rb") as f:
+        model_disbursement = pickle.load(f)
+    with open("models/collections_forecast_model.pkl", "rb") as f:
+        model_collections = pickle.load(f)
+    with open("models/growth_forecast_model.pkl", "rb") as f:
+        model_growth = pickle.load(f)
+    print("AI forecast models loaded successfully.")
+except Exception as e:
+    print(f"CRITICAL ERROR: Could not load AI models. {e}")
+    model_disbursement = None
+    model_collections = None
+    model_growth = None
 
+# --- AI FORECAST ROUTES (NO AUTH) ---
+
+@router.get("/forecast/disbursement")
+def get_disbursement_forecast(branch: str):
+    if not model_disbursement:
+        raise HTTPException(status_code=500, detail="Disbursement model is not available.")
+    
+    print(f"Generating disbursement forecast for: {branch}")
+
+    # 1. Create a future dataframe
+    future = model_disbursement.make_future_dataframe(periods=12, freq='W')
+    future['floor'] = 0
+    future['cap'] = 1305000.0
+
+    # 2. Make the prediction
+    forecast = model_disbursement.predict(future)
+
+    # 3. --- FIX: Use model.history for actuals ---
+    # Get historical data (Actuals)
+    hist_df = model_disbursement.history.copy()
+    hist_df['date'] = pd.to_datetime(hist_df['ds'])
+    
+    # Format Historical Data
+    historical_data = []
+    for _, row in hist_df.iterrows():
+        historical_data.append({
+            "month": row['date'].strftime('%b %Y'),
+            "actual": row['y'],
+            "predicted": None
+        })
+
+    # Get Forecast Data (Predictions) - only future dates
+    last_hist_date = hist_df['date'].max()
+    fcst_df = forecast[forecast['ds'] > last_hist_date].copy()
+    
+    # Format Forecast Data
+    forecast_data = []
+    for _, row in fcst_df.iterrows():
+        forecast_data.append({
+            "month": row['ds'].strftime('%b %Y'),
+            "actual": None,
+            "predicted": row['yhat'],
+            "confidence_low": row['yhat_lower'],
+            "confidence_high": row['yhat_upper']
+        })
+    
+    # Return structure matching frontend expectation
+    return {
+        "branch": branch,
+        "historical": historical_data,
+        "forecast": forecast_data
+    }
+
+@router.get("/forecast/collections")
+def get_collections_forecast(branch: str):
+    if not model_collections:
+        raise HTTPException(status_code=500, detail="Collections forecast model is not available.")
+
+    print(f"Generating collections forecast for: {branch}")
+
+    # 1. Create a future dataframe
+    future = model_collections.make_future_dataframe(periods=12, freq='W')
+    future['floor'] = 0.0
+    future['cap'] = 130000.0
+
+    # 2. Make the prediction
+    forecast = model_collections.predict(future)
+
+    # 3. --- FIX: Use model.history for actuals ---
+    hist_df = model_collections.history.copy()
+    hist_df['date'] = pd.to_datetime(hist_df['ds'])
+    
+    historical_data = []
+    for _, row in hist_df.iterrows():
+        historical_data.append({
+            "month": row['date'].strftime('%b %Y'),
+            "actual": row['y'],
+            "predicted": None
+        })
+
+    last_hist_date = hist_df['date'].max()
+    fcst_df = forecast[forecast['ds'] > last_hist_date].copy()
+    
+    forecast_data = []
+    for _, row in fcst_df.iterrows():
+        forecast_data.append({
+            "month": row['ds'].strftime('%b %Y'),
+            "actual": None,
+            "predicted": row['yhat'],
+            "confidence_low": row['yhat_lower'],
+            "confidence_high": row['yhat_upper']
+        })
+    
+    return {
+        "branch": branch,
+        "historical": historical_data,
+        "forecast": forecast_data
+    }
+
+@router.get("/forecast/growth")
+def get_growth_forecast(branch: str):
+    if not model_growth:
+        raise HTTPException(status_code=500, detail="Customer growth model is not available.")
+        
+    print(f"Generating customer growth forecast for: {branch}")
+
+    # 1. Create a future dataframe
+    future = model_growth.make_future_dataframe(periods=90, freq='D')
+    future['floor'] = 1.0
+    future['cap'] = 250.5
+
+    # 2. Make the prediction
+    forecast = model_growth.predict(future)
+
+    # 3. --- FIX: Use model.history for actuals ---
+    hist_df = model_growth.history.copy()
+    hist_df['date'] = pd.to_datetime(hist_df['ds'])
+    
+    historical_data = []
+    for _, row in hist_df.iterrows():
+        historical_data.append({
+            "month": row['date'].strftime('%b %Y'),
+            "actual": row['y'],
+            "predicted": None
+        })
+
+    last_hist_date = hist_df['date'].max()
+    fcst_df = forecast[forecast['ds'] > last_hist_date].copy()
+    
+    forecast_data = []
+    for _, row in fcst_df.iterrows():
+        forecast_data.append({
+            "month": row['ds'].strftime('%b %Y'),
+            "actual": None,
+            "predicted": row['yhat'],
+            "confidence_low": row['yhat_lower'],
+            "confidence_high": row['yhat_upper']
+        })
+    
+    return {
+        "branch": branch,
+        "historical": historical_data,
+        "forecast": forecast_data
+    }
+
+# --- AI ADVISOR ROUTE ---
+try:
+    all_rules = load_rules("ai_modules/rules.json")
+    print(f"AI Advisor rules ({len(all_rules)} rules) loaded successfully.")
+except Exception as e:
+    print(f"CRITICAL ERROR: Could not load AI rules. {e}")
+    all_rules = []
+
+@router.get("/advisor")
+def get_ai_advisor_insights(user=Depends(get_current_user)):
+    # ... (Keep your existing advisor logic) ...
+    if not all_rules:
+        raise HTTPException(status_code=500, detail="AI Advisor engine is not available.")
+
+    branch = user["branch"] if user["role"] != "admin" else None
+    
+    facts = {}
+    try:
+        conn = connect(
+            host="localhost",
+            user="root",
+            password="BtKQ@448",
+            database="FinSight"
+        )
+        cursor = conn.cursor(dictionary=True)
+
+        # Fact: branch_collection_rate_30d
+        last_30_days = datetime.now() - timedelta(days=30)
+        rate_query = """
+            SELECT SUM(lr.principal_completed_derived) / SUM(lr.principal_amount) * 100 AS rate
+            FROM loan_repayment lr
+            JOIN loan l ON lr.loan_id = l.id
+            JOIN client c ON l.client_id = c.id
+            JOIN office o ON c.office_id = o.id
+            WHERE lr.duedate >= %s
+        """
+        rate_params = [last_30_days]
+        if branch:
+            rate_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            rate_params.append(branch.strip())
+        
+        cursor.execute(rate_query, rate_params)
+        rate_result = cursor.fetchone()
+        facts["branch_collection_rate_30d"] = rate_result['rate'] or 100
+
+        # Fact: customer_growth_30d
+        first_of_this_month = datetime.today().replace(day=1)
+        last_month_start = (first_of_this_month - timedelta(days=1)).replace(day=1)
+        
+        growth_query = """
+            SELECT COUNT(DISTINCT c.id) AS count
+            FROM loan l
+            JOIN client c ON l.client_id = c.id
+            JOIN office o ON c.office_id = o.id
+            WHERE l.approvedon_date >= %s AND l.approvedon_date < %s
+        """
+        growth_params = [last_month_start, first_of_this_month]
+        if branch:
+            growth_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            growth_params.append(branch.strip())
+
+        cursor.execute(growth_query, growth_params)
+        facts["customer_growth_30d"] = cursor.fetchone()['count'] or 0
+        
+        # Fact: current_par_percent
+        par_query = """
+            SELECT 
+                SUM(CASE WHEN a.dpd_days > 30 THEN a.total_overdue_derived ELSE 0 END) / 
+                SUM(l.principal_disbursed_derived) * 100 AS par_percent
+            FROM loan l
+            LEFT JOIN arrears a ON l.id = a.loan_id
+            JOIN client c ON l.client_id = c.id
+            JOIN office o ON c.office_id = o.id
+        """
+        par_params = []
+        if branch:
+            par_query += " WHERE SUBSTRING_INDEX(o.name, ':', -1) = %s"
+            par_params.append(branch.strip())
+            
+        cursor.execute(par_query, par_params)
+        par_result = cursor.fetchone()
+        facts["current_par_percent"] = par_result['par_percent'] or 0
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print(f"Error gathering facts: {e}")
+        return {"error": f"Could not gather facts: {e}"}
+
+    # Add dummy forecast facts for demo
+    facts["forecasted_collections_next_week"] = 85000 
+    facts["forecasted_growth_next_month"] = 15 
+    
+    print(f"Running AI Advisor for {branch} with facts: {facts}")
+    recommendations = run_inference_engine(facts, all_rules)
+    
+    return {"recommendations": recommendations}

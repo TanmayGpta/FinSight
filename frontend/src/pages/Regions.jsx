@@ -15,12 +15,12 @@ const BRANCH_COUNTS = {
   "Bihar": 53,
   "Maharashtra": 3,
   "Delhi": 1,
-  "Karnataka": 1,
-  "Tamil Nadu": 2,
+  "Karnataka": 0,
+  "Tamil Nadu": 0,
   "Telangana": 1,
   "West Bengal": 1,
   "Gujarat": 3,
-  "Kerala": 2,
+  "Kerala": 0,
   "Andhra Pradesh": 1,
   "Odisha": 1,
   "Assam": 1,
@@ -32,34 +32,39 @@ const BRANCH_COUNTS = {
 const branchData = [
   { id: 1, name: "Mumbai Central", state: "Maharashtra", city: "Mumbai", portfolio: 15200000, loans: 842, collections: 96.8, performance: 96.8 },
   { id: 2, name: "Delhi NCR", state: "Delhi", city: "New Delhi", portfolio: 12800000, loans: 720, collections: 94.2, performance: 94.2 },
-  { id: 3, name: "Bangalore Tech", state: "Karnataka", city: "Bangalore", portfolio: 11500000, loans: 650, collections: 95.6, performance: 95.6 },
-  { id: 4, name: "Chennai Main", state: "Tamil Nadu", city: "Chennai", portfolio: 10200000, loans: 580, collections: 93.8, performance: 93.8 },
   { id: 5, name: "Hyderabad Central", state: "Telangana", city: "Hyderabad", portfolio: 9800000, loans: 520, collections: 92.5, performance: 92.5 },
   { id: 6, name: "Pune West", state: "Maharashtra", city: "Pune", portfolio: 8900000, loans: 485, collections: 91.2, performance: 91.2 },
   { id: 7, name: "Kolkata East", state: "West Bengal", city: "Kolkata", portfolio: 8500000, loans: 465, collections: 89.8, performance: 89.8 },
   { id: 8, name: "Ahmedabad North", state: "Gujarat", city: "Ahmedabad", portfolio: 7800000, loans: 420, collections: 88.5, performance: 88.5 },
   { id: 9, name: "Jaipur Central", state: "Rajasthan", city: "Jaipur", portfolio: 6500000, loans: 350, collections: 87.2, performance: 87.2 },
-  { id: 10, name: "Lucknow Main", state: "Uttar Pradesh", city: "Lucknow", portfolio: 6200000, loans: 340, collections: 86.8, performance: 86.8 },
-  { id: 11, name: "Kochi Marine", state: "Kerala", city: "Kochi", portfolio: 5800000, loans: 320, collections: 85.5, performance: 85.5 },
+  { id: 10, name: "Lucknow Main", state: "Uttar Pradesh", city: "Lucknow", portfolio: 6200000, loans: 340, collections: 68.5, performance: 68.5 },
   { id: 12, name: "Indore Trade", state: "Madhya Pradesh", city: "Indore", portfolio: 5500000, loans: 300, collections: 84.2, performance: 84.2 },
   { id: 13, name: "Nagpur Orange", state: "Maharashtra", city: "Nagpur", portfolio: 5200000, loans: 285, collections: 83.8, performance: 83.8 },
   { id: 14, name: "Bhopal Lake", state: "Madhya Pradesh", city: "Bhopal", portfolio: 4900000, loans: 270, collections: 82.5, performance: 82.5 },
   { id: 15, name: "Visakhapatnam Port", state: "Andhra Pradesh", city: "Visakhapatnam", portfolio: 4600000, loans: 255, collections: 81.2, performance: 81.2 },
   { id: 16, name: "Surat Diamond", state: "Gujarat", city: "Surat", portfolio: 4300000, loans: 240, collections: 80.8, performance: 80.8 },
-  { id: 17, name: "Kanpur Industrial", state: "Uttar Pradesh", city: "Kanpur", portfolio: 4000000, loans: 220, collections: 79.5, performance: 79.5 },
-  { id: 18, name: "Coimbatore Textile", state: "Tamil Nadu", city: "Coimbatore", portfolio: 3800000, loans: 210, collections: 78.2, performance: 78.2 },
+  { id: 17, name: "Kanpur Industrial", state: "Uttar Pradesh", city: "Kanpur", portfolio: 4000000, loans: 220, collections: 65.5, performance: 65.5 },
   { id: 19, name: "Vadodara Refinery", state: "Gujarat", city: "Vadodara", portfolio: 3500000, loans: 195, collections: 77.8, performance: 77.8 },
-  { id: 20, name: "Agra Heritage", state: "Uttar Pradesh", city: "Agra", portfolio: 3200000, loans: 180, collections: 76.5, performance: 76.5 },
+  { id: 20, name: "Agra Heritage", state: "Uttar Pradesh", city: "Agra", portfolio: 3200000, loans: 180, collections: 66.5, performance: 66.5 },
   { id: 21, name: "Patna Central", state: "Bihar", city: "Patna", portfolio: 2800000, loans: 160, collections: 75.2, performance: 75.2 },
   { id: 22, name: "Bhubaneswar Tech", state: "Odisha", city: "Bhubaneswar", portfolio: 2600000, loans: 145, collections: 74.8, performance: 74.8 },
   { id: 23, name: "Guwahati Gateway", state: "Assam", city: "Guwahati", portfolio: 2400000, loans: 135, collections: 73.5, performance: 73.5 },
   { id: 24, name: "Chandigarh Modern", state: "Punjab", city: "Chandigarh", portfolio: 2200000, loans: 125, collections: 72.1, performance: 72.1 },
-  { id: 25, name: "Thiruvananthapuram Capital", state: "Kerala", city: "Thiruvananthapuram", portfolio: 2000000, loans: 115, collections: 71.8, performance: 71.8 },
   { id: 26, name: "Ranchi Industrial", state: "Jharkhand", city: "Ranchi", portfolio: 1800000, loans: 105, collections: 70.5, performance: 70.5 },
   { id: 27, name: "Raipur Commerce", state: "Chhattisgarh", city: "Raipur", portfolio: 1600000, loans: 95, collections: 69.2, performance: 69.2 },
   { id: 28, name: "Gurgaon Tech", state: "Haryana", city: "Gurgaon", portfolio: 1400000, loans: 85, collections: 68.8, performance: 68.8 },
-  { id: 29, name: "Dehradun Hills", state: "Uttarakhand", city: "Dehradun", portfolio: 1200000, loans: 75, collections: 67.5, performance: 67.5 },
-  { id: 30, name: "Shimla Valley", state: "Himachal Pradesh", city: "Shimla", portfolio: 1000000, loans: 65, collections: 66.1, performance: 66.1 }
+  { id: 29, name: "Dehradun Hills", state: "Uttarakhand", city: "Dehradun", portfolio: 1200000, loans: 75, collections: 92.5, performance: 92.5 },
+  { id: 30, name: "Shimla Valley", state: "Himachal Pradesh", city: "Shimla", portfolio: 1000000, loans: 65, collections: 66.1, performance: 66.1 },
+  { id: 31, name: "Raipur Tech", state: "Chhattisgarh", city: "Raipur", portfolio: 1800000, loans: 95, collections: 93.8, performance: 93.8 },
+  { id: 32, name: "Jodhpur", state: "Rajasthan", city: "Jodhpur", portfolio: 5800000, loans: 320, collections: 86.5, performance: 86.5 },
+  { id: 33, name: "Udaipur", state: "Rajasthan", city: "Udaipur", portfolio: 5200000, loans: 290, collections: 85.8, performance: 85.8 },
+  { id: 34, name: "Bikaner", state: "Rajasthan", city: "Bikaner", portfolio: 4800000, loans: 270, collections: 84.9, performance: 84.9 },
+  { id: 35, name: "Ajmer", state: "Rajasthan", city: "Ajmer", portfolio: 4500000, loans: 250, collections: 83.7, performance: 83.7 },
+  { id: 37, name: "Gwalior Fort", state: "Madhya Pradesh", city: "Gwalior", portfolio: 4600000, loans: 255, collections: 83.2, performance: 83.2 },
+  { id: 40, name: "Gurugram Tech", state: "Haryana", city: "Gurugram", portfolio: 5500000, loans: 300, collections: 85.4, performance: 85.4 },
+  { id: 41, name: "Faridabad Industrial", state: "Haryana", city: "Faridabad", portfolio: 4900000, loans: 275, collections: 84.6, performance: 84.6 },
+  { id: 42, name: "Panipat Textile", state: "Haryana", city: "Panipat", portfolio: 4400000, loans: 245, collections: 83.8, performance: 83.8 },
+  { id: 43, name: "Hisar Agriculture", state: "Haryana", city: "Hisar", portfolio: 4000000, loans: 220, collections: 82.9, performance: 82.9 }
 ];
 
 // India Map Component using static SVG
@@ -103,7 +108,7 @@ const IndiaMap = ({ branches }) => {
   const getStateColor = (stateName) => {
     const stateKey = normalizeStateName(stateName);
     const state = stateData[stateKey];
-    if (!state) return "#f1f5f9"; // default no branches
+    if (!state) return "#94a3b8"; // default no branches - deeper blue-gray
 
     const performance = state.avgPerformance;
     if (performance >= 90) return "#059669";
@@ -393,23 +398,19 @@ const RegionalMapPage = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-blue-50 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-slate-600">
-                  Net Performance
-                </h3>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-slate-800">
-                    94%
-                  </span>
-                  <span className="text-sm text-slate-500">avg collection</span>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium text-slate-600">Avg Performance</h3>
+                      <div className="mt-2 flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-800">84.7%</span>
+                        <span className="text-sm text-slate-500">collection rate</span>
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-blue-50 p-3">
+                      <Target className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="rounded-lg bg-blue-100 p-3">
-                <Target className="h-6 w-6 text-blue-700" />
-              </div>
-            </div>
-          </div>
 
           <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-yellow-50 p-6 shadow-sm">
             <div className="flex items-center justify-between">
@@ -440,7 +441,7 @@ const RegionalMapPage = () => {
                 </h3>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-slate-800">
-                    ₹{(totalPortfolio / 1000000).toFixed(0)}M
+                    ₹605.7M
                   </span>
                   <span className="text-sm text-slate-500">managed</span>
                 </div>

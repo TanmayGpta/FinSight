@@ -73,7 +73,7 @@ const handleSubmit = async (e) => {
 
     const { access_token } = response.data;
     localStorage.setItem("token", access_token);
-    window.location.href = "/";
+    window.location.href = "/Dashboard";
   } catch (err) {
     console.error("Login failed:", err);
     alert("Login failed: Invalid credentials or server error.");

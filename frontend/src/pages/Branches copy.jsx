@@ -258,23 +258,36 @@ const BranchComparisonChart = ({ branches, metric }) => {
 
   // Multi-metric radar chart data for comprehensive comparison
   const radarData = [
-    { metric: "Portfolio", ...branches.reduce((acc, branch, index) => ({
+  {
+    metric: "Portfolio",
+    ...branches.reduce((acc, branch, index) => ({
       ...acc,
-      [`branch${index}`]: (branch.portfolio / 15000000) * 100 // Normalize to 100
-    }), {}) },
-    { metric: "Loans", ...branches.reduce((acc, branch, index) => ({
+      [`branch${index}`]: Math.round((branch.portfolio / Math.max(...branches.map(b => b.portfolio))) * 100)
+    }), {})
+  },
+  {
+    metric: "Loans",
+    ...branches.reduce((acc, branch, index) => ({
       ...acc,
-      [`branch${index}`]: (branch.loans / 1000) * 100 // Normalize to 100
-    }), {}) },
-    { metric: "Collections", ...branches.reduce((acc, branch, index) => ({
+      [`branch${index}`]: Math.round((branch.loans / Math.max(...branches.map(b => b.loans))) * 100)
+    }), {})
+  },
+  {
+    metric: "Collections",
+    ...branches.reduce((acc, branch, index) => ({
       ...acc,
-      [`branch${index}`]: branch.collections
-    }), {}) },
-    { metric: "Performance", ...branches.reduce((acc, branch, index) => ({
+      [`branch${index}`]: Math.round((branch.collections / Math.max(...branches.map(b => b.collections))) * 100)
+    }), {})
+  },
+  {
+    metric: "Performance",
+    ...branches.reduce((acc, branch, index) => ({
       ...acc,
-      [`branch${index}`]: branch.performance
-    }), {}) },
-  ];
+      [`branch${index}`]: Math.round((branch.performance / Math.max(...branches.map(b => b.performance))) * 100)
+    }), {})
+  }
+];
+
 
   return (
     <div className="space-y-8">

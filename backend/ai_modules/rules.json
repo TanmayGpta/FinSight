@@ -1,0 +1,129 @@
+[
+  {
+    "rule_name": "High Risk Branch (Low Collections)",
+    "if": [
+      {
+        "fact": "forecasted_collections_next_week",
+        "operator": "less_than",
+        "value": 100000
+      },
+      {
+        "fact": "current_par_percent",
+        "operator": "greater_than",
+        "value": 10
+      }
+    ],
+    "then": {
+      "alert": "Critical Branch Warning!",
+      "recommendation": "Forecasted collections are dangerously low and PAR is high. Recommend immediate intervention and performance review for this branch."
+    }
+  },
+  {
+    "rule_name": "Slowing Customer Growth (Forecast)",
+    "if": [
+      {
+        "fact": "forecasted_growth_next_month",
+        "operator": "less_than",
+        "value": 10
+      }
+    ],
+    "then": {
+      "alert": "Stagnant Growth Detected",
+      "recommendation": "Customer growth is forecast to be less than 10 clients next month. Suggest launching a local marketing initiative."
+    }
+  },
+  {
+    "rule_name": "High Risk New Loan (ML Score)",
+    "if": [
+      {
+        "fact": "client_risk_score",
+        "operator": "greater_than",
+        "value": 0.8
+      },
+      {
+        "fact": "loan_product_type",
+        "operator": "equals",
+        "value": "New Business Loan"
+      }
+    ],
+    "then": {
+      "alert": "High-Risk Application (ML)",
+      "recommendation": "A high-risk client (per ML model) is applying for a new business loan. Flag for mandatory manual review by a senior manager."
+    }
+  },
+  {
+    "rule_name": "Simple PAR Warning",
+    "if": [
+      {
+        "fact": "current_par_percent",
+        "operator": "greater_than",
+        "value": 15
+      }
+    ],
+    "then": {
+      "alert": "High Portfolio at Risk",
+      "recommendation": "Branch PAR is over 15%. Investigate top delinquent clients."
+    }
+  },
+  {
+    "rule_name": "NEW: Client Approaching Delinquency",
+    "if": [
+      {
+        "fact": "client_current_dpd",
+        "operator": "greater_than",
+        "value": 25
+      },
+      {
+        "fact": "client_current_dpd",
+        "operator": "less_than",
+        "value": 30
+      }
+    ],
+    "then": {
+      "alert": "Client Pre-Delinquent Warning",
+      "recommendation": "Client's DPD is > 25. Prioritize immediate follow-up call to prevent them from hitting 30+ days (PAR)."
+    }
+  },
+  {
+    "rule_name": "NEW: High-Risk Applicant (CIBIL)",
+    "if": [
+      {
+        "fact": "applicant_cibil_score",
+        "operator": "less_than",
+        "value": 600
+      }
+    ],
+    "then": {
+      "alert": "High-Risk Application (CIBIL)",
+      "recommendation": "Applicant's CIBIL score is below 600. Flag for rejection or require high collateral."
+    }
+  },
+  {
+    "rule_name": "NEW: Branch Collection Rate Warning",
+    "if": [
+      {
+        "fact": "branch_collection_rate_30d",
+        "operator": "less_than",
+        "value": 85
+      }
+    ],
+    "then": {
+      "alert": "Poor Branch Performance",
+      "recommendation": "Branch 30-day collection rate is below 85%. New loan approvals in this branch should be paused pending review."
+    }
+  },
+  {
+    "rule_name": "NEW: Stagnant Customer Growth (Actual)",
+    "if": [
+      {
+        "fact": "customer_growth_30d",
+        "operator": "less_than",
+        "value": 5
+      }
+    ],
+    "then": {
+      "alert": "Stagnant Growth (Actual)",
+      "recommendation": "Branch acquired less than 5 clients in the last 30 days. Investigate client dropout rate and local marketing efforts."
+    }
+  }
+]

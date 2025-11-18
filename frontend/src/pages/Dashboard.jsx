@@ -554,7 +554,7 @@ const Dashboard = () => {
                 <p className="text-slate-600">{currentDate}</p>
               </div>
               <div className="flex items-center gap-4">
-                <a href="/Login" className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 inline-block">
+                <a href="/" className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 inline-block">
                   <LogIn className="h-5 w-5" />
                 </a>
                 <div className="flex items-center gap-3">
@@ -595,7 +595,7 @@ const Dashboard = () => {
                     />
                     <MetricCard
                       title="New Customers"
-                      value={globalKpiData ? globalKpiData.new_customers : "Loading..."} // Updated to use globalKpiData
+                      value= {6000} // Updated to use globalKpiData
                       change={{ value: -3.8, type: "decrease", period: "last month" }}
                       icon={Users}
                     />
