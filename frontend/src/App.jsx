@@ -7,7 +7,7 @@ import Branches from './pages/Branches.jsx';
 import RegionalMapPage from './pages/Regions.jsx';
 import Chatbot from './pages/chatbot.jsx';
 import TSP from './pages/TSP.jsx';
-
+import AdvisorInsights from './pages/AdvisorInsights.jsx';
 function App() {
   return (
     <Routes>
@@ -19,6 +19,7 @@ function App() {
       <Route path="/region" element={<RegionalMapPage />} />
       <Route path="/chatbot" element={<Chatbot />} />
       <Route path="/TSP" element={<TSP />} />
+      <Route path="/AdvisorInsights" element={<AdvisorInsights />} />
     </Routes>
   );
 }

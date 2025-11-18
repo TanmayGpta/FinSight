@@ -1,5 +1,5 @@
 import {
-  BarChart3, Building2, CreditCard, DollarSign, FileText, Home, PieChart, Settings, TrendingUp, Users,Bot,Map
+  BarChart3, Building2, CreditCard, DollarSign, FileText, Home, PieChart, Settings, TrendingUp, Users,Bot,Map,BookAlert
 } from "lucide-react";
 import { useLocation } from "react-router-dom"; // Add this import
 
@@ -18,7 +18,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { title: "Forecast", href: "/forecast", icon: BarChart3 },
     { title: "Chatbot", href: "/chatbot", icon: Bot },
     { title: "TSP", href: "/TSP", icon: Map },
+    { title: "AdvisorInsights", href: "/AdvisorInsights", icon: BookAlert },
     { title: "Settings", href: "/settings", icon: Settings },
+    
     
   ].map(item => ({
     ...item,

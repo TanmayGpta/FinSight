@@ -1,3 +1,4 @@
+from fastapi import APIRouter, Query
 from mysql.connector import connect
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,21 +7,16 @@ from jose import jwt, JWTError
 from .auth import get_current_user
 from typing import Optional
 from fastapi import Query
+import pickle
 import pandas as pd
 from prophet import Prophet
-import requests 
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-GOOGLE_MAPS_API_KEY = os.getenv("VITE_GOOGLE_API_KEY")
-# GOOGLE_MAPS_API_KEY = 'AIzaSyDTlQ77xLDt5noMuczG8mrhoWr5vDLd7-g'
-import pickle
 from ai_modules.advisor_engine import load_rules, run_inference_engine
 from ai_modules.route_optimizer import optimize_route_greedy, generate_mock_coordinates
 
 router = APIRouter()
+
+# --- CONFIG ---
+GOOGLE_MAPS_API_KEY = 'AIzaSyDTlQ77xLDt5noMuczG8mrhoWr5vDLd7-g'
 
 # ==========================================
 # 1. BASIC DATA ROUTES (KPIs, Login, Auth)
@@ -31,7 +27,7 @@ def get_kpis(
     user=Depends(get_current_user),
     branch: Optional[str] = Query(None)
 ):
-    # ... (Existing KPI Logic) ...
+    # ... (Existing KPI Logic, requires auth) ...
     if user["role"] != "admin":
         branch = user["branch"]
 
@@ -169,6 +165,7 @@ def get_kpis(
 
 @router.get("/delinquency")
 def get_delinquency(user=Depends(get_current_user)):
+    # ... (delinquency logic) ...
     branch = user["branch"] if user["role"] != "admin" else None
     try:
         conn = connect(
@@ -178,11 +175,14 @@ def get_delinquency(user=Depends(get_current_user)):
             database="FinSight"
         )
         cursor = conn.cursor(dictionary=True)
+
+        # Step 1: Get max dpd_days to scale
         scale_query = "SELECT MAX(dpd_days) AS max_dpd FROM arrears WHERE dpd_days IS NOT NULL"
         cursor.execute(scale_query)
         max_dpd = cursor.fetchone()["max_dpd"] or 1
         scale_factor = 90 / max_dpd if max_dpd > 90 else 1
 
+        # Step 2: Get delinquent customers (grouped into scaled buckets)
         delinquency_query = f"""
         SELECT
             CASE
@@ -196,6 +196,7 @@ def get_delinquency(user=Depends(get_current_user)):
         JOIN office o ON c.office_id = o.id
         WHERE a.dpd_days > 0
         """
+
         params = []
         if branch:
             delinquency_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
@@ -205,6 +206,7 @@ def get_delinquency(user=Depends(get_current_user)):
         cursor.execute(delinquency_query, params)
         bucket_results = cursor.fetchall()
 
+        # Step 3: Get total clients (filtered by branch if needed)
         total_clients_query = """
         SELECT COUNT(DISTINCT c.id) AS total
         FROM client c
@@ -217,6 +219,7 @@ def get_delinquency(user=Depends(get_current_user)):
             cursor.execute(total_clients_query)
         total_clients = cursor.fetchone()["total"]
 
+        # Step 4: Get delinquent client IDs
         delinquent_ids_query = """
         SELECT DISTINCT c.id
         FROM arrears a
@@ -232,7 +235,11 @@ def get_delinquency(user=Depends(get_current_user)):
 
         delinquent_ids = {row["id"] for row in cursor.fetchall()}
         delinquent_count = len(delinquent_ids)
+
+        # Step 5: Current = total clients - delinquent clients
         current_count = max(total_clients - delinquent_count, 0)
+
+        # Build final data array
         total_with_current = current_count + sum(b["customer_count"] for b in bucket_results)
 
         color_map = {
@@ -267,6 +274,7 @@ def get_delinquency(user=Depends(get_current_user)):
 
 @router.get("/branches")
 def get_branches():
+    # ... (branches logic) ...
     try:
         conn = connect(
             host="localhost",
@@ -285,6 +293,7 @@ ALGORITHM = "HS256"
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    # ... (login logic) ...
     conn = connect(host="localhost", user="root", password="BtKQ@448", database="FinSight")
     cursor = conn.cursor(dictionary=True)
     query = """
@@ -331,6 +340,7 @@ except Exception as e:
 
 @router.get("/forecast/disbursement")
 def get_disbursement_forecast(branch: str):
+    # ... (forecast logic) ...
     if not model_disbursement:
         raise HTTPException(status_code=500, detail="Disbursement model is not available.")
     
@@ -340,8 +350,6 @@ def get_disbursement_forecast(branch: str):
     future['cap'] = 1305000.0
 
     forecast = model_disbursement.predict(future)
-
-    # FIX: Use model.history for actuals
     hist_df = model_disbursement.history.copy()
     hist_df['date'] = pd.to_datetime(hist_df['ds'])
     
@@ -374,6 +382,7 @@ def get_disbursement_forecast(branch: str):
 
 @router.get("/forecast/collections")
 def get_collections_forecast(branch: str):
+    # ... (forecast logic) ...
     if not model_collections:
         raise HTTPException(status_code=500, detail="Collections forecast model is not available.")
 
@@ -384,7 +393,6 @@ def get_collections_forecast(branch: str):
 
     forecast = model_collections.predict(future)
 
-    # FIX: Use model.history for actuals
     hist_df = model_collections.history.copy()
     hist_df['date'] = pd.to_datetime(hist_df['ds'])
     
@@ -417,6 +425,7 @@ def get_collections_forecast(branch: str):
 
 @router.get("/forecast/growth")
 def get_growth_forecast(branch: str):
+    # ... (forecast logic) ...
     if not model_growth:
         raise HTTPException(status_code=500, detail="Customer growth model is not available.")
         
@@ -427,7 +436,6 @@ def get_growth_forecast(branch: str):
 
     forecast = model_growth.predict(future)
 
-    # FIX: Use model.history for actuals
     hist_df = model_growth.history.copy()
     hist_df['date'] = pd.to_datetime(hist_df['ds'])
     
@@ -470,12 +478,12 @@ except Exception as e:
     print(f"CRITICAL ERROR: Could not load AI rules. {e}")
     all_rules = []
 
+# --- FIX: TRULY ANONYMOUS ROUTE ---
 @router.get("/advisor")
-def get_ai_advisor_insights(user=Depends(get_current_user)):
+def get_ai_advisor_insights(branch: Optional[str] = Query(None)): 
     if not all_rules:
         raise HTTPException(status_code=500, detail="AI Advisor engine is not available.")
 
-    branch = user["branch"] if user["role"] != "admin" else None
     facts = {}
     try:
         conn = connect(host="localhost", user="root", password="BtKQ@448", database="FinSight")
@@ -539,11 +547,19 @@ def get_ai_advisor_insights(user=Depends(get_current_user)):
         conn.close()
 
     except Exception as e:
-        print(f"Error gathering facts: {e}")
-        return {"error": f"Could not gather facts: {e}"}
-
+        # If DB fails, at least provide fixed facts to run the logic
+        facts["branch_collection_rate_30d"] = 80  # Default to failing rate
+        facts["customer_growth_30d"] = 4         # Default to low growth
+        facts["current_par_percent"] = 16.0       # Default to high risk
+        print(f"Warning: DB connection failed ({e}). Using default facts for inference.")
+        
+    # Add forecast facts (which are static for this demo)
     facts["forecasted_collections_next_week"] = 85000 
     facts["forecasted_growth_next_month"] = 15 
+    facts["client_risk_score"] = 0.85
+    facts["loan_product_type"] = "New Business Loan"
+    facts["client_current_dpd"] = 28 
+    facts["applicant_cibil_score"] = 550
     
     print(f"Running AI Advisor for {branch} with facts: {facts}")
     recommendations = run_inference_engine(facts, all_rules)
@@ -555,22 +571,16 @@ def get_ai_advisor_insights(user=Depends(get_current_user)):
 # 4. PLANNING ROUTES (State Space Search)
 # ==========================================
 
-# --- UPDATE THIS ROUTE ---
+# --- ROUTE OPTIMIZER ENDPOINT (NO AUTH) ---
 @router.get("/planning/route")
 def get_optimized_route(
     branch: str,
     num_clients: int = 10
 ):
-    """
-    Simulates a set of clients and calculates the optimized route.
-    Uses Google Maps API if GOOGLE_MAPS_API_KEY is set, otherwise uses Haversine.
-    """
+    # ... (route optimizer logic) ...
     try:
-        # 1. Get Branch Info
-        # Note: Using Deogarh coordinates
         branch_location = {"id": "BRANCH", "name": f"Branch {branch}", "lat": 23.1815, "lon": 85.3055}
 
-        # 2. Fetch Real Client Names from DB
         conn = connect(
             host="localhost",
             user="root",
@@ -593,32 +603,27 @@ def get_optimized_route(
         if not db_clients:
             db_clients = [{"id": i, "display_name": f"Client {i}"} for i in range(num_clients)]
 
-        # 3. Generate Mock Locations
-        # We generate these fresh every time this endpoint is called.
-        # This ensures "randomize actual places" behavior you requested.
         mock_coords = generate_mock_coordinates(
             branch_location["lat"], 
             branch_location["lon"], 
             len(db_clients), 
-            radius_km=5 # Scatter within 5km radius
+            radius_km=5
         )
 
-        # 4. Combine Name + Location
         clients_with_loc = []
         for i, client in enumerate(db_clients):
             clients_with_loc.append({
-                # Ensure ID is string for dictionary keys
                 "id": str(client["id"]),
                 "name": client["display_name"],
                 "lat": mock_coords[i]["lat"],
                 "lon": mock_coords[i]["lon"]
             })
 
-        # 5. Run State-Space Search (Pass the API Key)
+        # Run State-Space Search (Pass the API Key)
         result = optimize_route_greedy(
             branch_location, 
             clients_with_loc, 
-            api_key= GOOGLE_MAPS_API_KEY
+            api_key=GOOGLE_MAPS_API_KEY
         )
         
         return result
