@@ -1,104 +1,193 @@
 import React, { useState, useEffect } from "react";
 import {
-  MapPin,
-  Loader,
-  Navigation,
-  Building2,
-  Users,
-  Zap,
-  ChevronRight,
+  AlertTriangle,
   AlertCircle,
-  Layers // Added for the placeholder map
+  TrendingDown,
+  ChevronRight,
+  X,
+  Zap,
 } from "lucide-react";
 
-// --- FIX 1: Using 'SideBar' casing as per user's last compiled code ---
 import Sidebar from "../components/ui/SideBar";
-
-// --- NOTE: Leaflet imports removed for compilation stability ---
-// Uncomment these lines in your local VS Code after running: npm install leaflet react-leaflet
-// import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
-// import "leaflet/dist/leaflet.css";
-// import L from "leaflet";
-
-// --- Helper Component: Map Placeholder (For Preview/Compilation) ---
-// This is what renders instead of the map in this environment.
-const MapPlaceholder = ({ routeData }) => (
-  <div className="h-full w-full bg-slate-100 relative overflow-hidden rounded-lg flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300">
-    <div className="absolute inset-0 opacity-10 bg-[url('https://www.openstreetmap.org/assets/beautified-map-6f5a7075f1c07427044414144444.png')] bg-cover bg-center" />
-    
-    {routeData ? (
-      <div className="z-10 text-center bg-white/90 p-6 rounded-xl shadow-sm border border-slate-200 backdrop-blur-sm">
-        <div className="flex items-center justify-center mb-3">
-          <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
-            <Navigation className="h-6 w-6 text-emerald-600" />
-          </div>
-        </div>
-        <h3 className="text-lg font-bold text-slate-800">Route Optimized!</h3>
-        <p className="text-sm text-slate-600 mt-1">
-          {routeData.client_count} stops • {routeData.total_distance_km} km
-        </p>
-        <p className="text-xs text-slate-400 mt-4 max-w-[200px] mx-auto">
-          **Data Source:** {routeData.data_source}
-        </p>
-      </div>
-    ) : (
-      <div className="z-10 flex flex-col items-center">
-        <Layers className="h-12 w-12 mb-3 opacity-50" />
-        <p className="font-medium">Map Visualization</p>
-        <p className="text-sm opacity-70">Select options to generate route</p>
-      </div>
-    )}
-  </div>
-);
-
 const cn = (...classes) => {
   return classes.filter(Boolean).join(" ");
 };
 
-const branchOptions = [
-  { id: "087:Deogarh", name: "087:Deogarh" },
-  { id: "254:Mungra Badshahpur", name: "254:Mungra Badshahpur" },
-  { id: "167:Gwalior", name: "167:Gwalior" },
+const mockRecommendations = [
+  {
+    id: 1,
+    alert: "Critical Risk",
+    severity: "critical",
+    recommendation:
+      "Recommend immediate intervention and performance review for Deogarh branch. Portfolio at risk has exceeded safe thresholds.",
+    reason: "Simple PAR Warning",
+    branch: "087:Deogarh",
+    detailsTitle: "Portfolio at Risk Analysis",
+    detailedExplanation:
+      "The Deogarh branch has shown a significant increase in Portfolio at Risk (PAR) over the past 3 months. PAR increased from 8.2% to 14.5%, crossing the critical threshold of 10%. This indicates that borrowers are facing repayment difficulties, which could lead to higher default rates if not addressed immediately.",
+    ruleDetails:
+      "The rule 'Simple PAR Warning' triggers when: PAR > 10% AND branch_size > 500 customers AND trend is upward. This rule uses historical PAR data and trends to predict risk.",
+    recommendations: [
+      "Conduct immediate field visits to understand borrower challenges",
+      "Implement targeted loan restructuring programs",
+      "Increase collection efforts and borrower support",
+      "Review credit underwriting standards",
+    ],
+    metrics: {
+      current_par: "14.5%",
+      previous_par: "8.2%",
+      borrowers_at_risk: 245,
+      potential_loss: "₹28,50,000",
+    },
+  },
+  {
+    id: 2,
+    alert: "Warning",
+    severity: "warning",
+    recommendation:
+      "Monitor collection efficiency closely. Mungra Badshahpur branch showing declining trend in recovery rates.",
+    reason: "Collection Efficiency Decline",
+    branch: "254:Mungra Badshahpur",
+    detailsTitle: "Collection Efficiency Trend",
+    detailedExplanation:
+      "The Mungra Badshahpur branch has experienced a 12% decline in collection efficiency over the last quarter. Collection rates dropped from 94.2% to 82.8%. While not yet critical, this downward trend suggests emerging challenges in borrower repayment capacity or collection team performance.",
+    ruleDetails:
+      "The rule 'Collection Efficiency Decline' triggers when: collection_rate < 85% AND trend_slope is negative AND decline_rate > 5% in 90 days. This predictive rule helps identify deteriorating performance before crisis.",
+    recommendations: [
+      "Analyze borrower repayment patterns and identify problem accounts",
+      "Review collection team performance and provide additional training",
+      "Implement early warning system for high-risk borrowers",
+      "Consider collection incentive adjustments",
+    ],
+    metrics: {
+      current_efficiency: "82.8%",
+      previous_efficiency: "94.2%",
+      overdue_accounts: 87,
+      recovery_potential: "₹12,40,000",
+    },
+  },
+  {
+    id: 3,
+    alert: "Opportunity",
+    severity: "opportunity",
+    recommendation:
+      "Hariyali branch is showing exceptional performance. Consider expansion of loan products and increase in disbursement targets.",
+    reason: "High Performance Signal",
+    branch: "156:Hazaribagh Branch",
+    detailsTitle: "High Performance Analysis",
+    detailedExplanation:
+      "The Hazaribagh branch has demonstrated consistently strong performance across all key metrics. Growth rate is 18% above average, PAR is well-controlled at 3.2%, and customer satisfaction scores are in the top 10%. This branch is a model for operational excellence.",
+    ruleDetails:
+      "The rule 'High Performance Signal' triggers when: PAR < 5% AND growth_rate > 12% AND customer_satisfaction > 85% AND operational_efficiency > 90%. This rule identifies branches ready for expansion.",
+    recommendations: [
+      "Increase loan disbursement targets by 25%",
+      "Launch new loan products (seasonal, business expansion)",
+      "Replicate operational practices to other branches",
+      "Consider branch manager for training/leadership roles",
+    ],
+    metrics: {
+      current_par: "3.2%",
+      growth_rate: "18.3%",
+      customer_satisfaction: "92%",
+      expansion_potential: "₹45,50,000",
+    },
+  },
+  {
+    id: 4,
+    alert: "Warning",
+    severity: "warning",
+    recommendation:
+      "Giridih office requires portfolio diversification review. Over-concentration in agricultural loans detected.",
+    reason: "Portfolio Concentration Risk",
+    branch: "203:Giridih Office",
+    detailsTitle: "Portfolio Concentration Analysis",
+    detailedExplanation:
+      "Giridih office has 68% of its portfolio in agricultural loans, creating significant concentration risk. While agricultural lending is important, this level of concentration exposes the branch to seasonal volatility and sector-specific shocks.",
+    ruleDetails:
+      "The rule 'Portfolio Concentration Risk' triggers when: Single_sector_percentage > 60% AND portfolio_size > 300 accounts AND market_volatility is high. This rule prevents over-reliance on single sectors.",
+    recommendations: [
+      "Develop diversification strategy across 3-4 sectors",
+      "Create business expansion and trade finance products",
+      "Partner with NBFC for non-agricultural lending",
+      "Train staff on new product categories",
+    ],
+    metrics: {
+      agricultural_concentration: "68%",
+      target_concentration: "45%",
+      diversification_gap: "23%",
+      new_loan_potential: "₹8,70,000",
+    },
+  },
 ];
 
-export default function TSP() {
-  const [selectedBranch, setSelectedBranch] = useState("087:Deogarh");
-  const [visitCount, setVisitCount] = useState(10);
-  const [isLoading, setIsLoading] = useState(false);
-  const [routeData, setRouteData] = useState(null);
-  const [error, setError] = useState(null);
+const AlertIcon = ({ severity }) => {
+  switch (severity) {
+    case "critical":
+      return <AlertTriangle className="h-5 w-5" />;
+    case "warning":
+      return <AlertCircle className="h-5 w-5" />;
+    case "opportunity":
+      return <Zap className="h-5 w-5" />;
+    default:
+      return null;
+  }
+};
 
-  const handleOptimizeRoute = async () => {
+const AlertColor = ({ severity }) => {
+  switch (severity) {
+    case "critical":
+      return {
+        bg: "bg-red-50",
+        border: "border-red-200",
+        text: "text-red-700",
+        badge: "bg-red-100 text-red-700",
+      };
+    case "warning":
+      return {
+        bg: "bg-yellow-50",
+        border: "border-yellow-200",
+        text: "text-yellow-700",
+        badge: "bg-yellow-100 text-yellow-700",
+      };
+    case "opportunity":
+      return {
+        bg: "bg-green-50",
+        border: "border-green-200",
+        text: "text-green-700",
+        badge: "bg-green-100 text-green-700",
+      };
+    default:
+      return {
+        bg: "bg-slate-50",
+        border: "border-slate-200",
+        text: "text-slate-700",
+        badge: "bg-slate-100 text-slate-700",
+      };
+  }
+};
+
+export default function AdvisorInsights() {
+  const [recommendations, setRecommendations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCard, setSelectedCard] = useState(null);
+
+  useEffect(() => {
     setIsLoading(true);
-    setError(null);
-    
-    try {
-      // --- FIX 2: Live API Call ---
-      const API_HOST = "http://127.0.0.1:8080"; 
-      const response = await fetch(
-        `${API_HOST}/api/planning/route?branch=${encodeURIComponent(selectedBranch)}&num_clients=${visitCount}`
-      );
-
-      if (!response.ok) {
-        const errorBody = await response.json();
-        throw new Error(`API Error: ${response.status} - ${errorBody.error || errorBody.detail || 'Failed to connect/calculate'}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(`Backend Error: ${data.error}`);
-      }
-
-      setRouteData(data);
-      
-    } catch (err) {
-      console.error("Route optimization failed:", err);
-      setError(err.message);
-    } finally {
+    setTimeout(() => {
+      setRecommendations(mockRecommendations);
       setIsLoading(false);
-    }
+    }, 1500);
+  }, []);
+
+  const handleCardClick = (recommendation) => {
+    setSelectedCard(recommendation);
   };
+
+  const closeModal = () => {
+    setSelectedCard(null);
+  };
+
+  const colors = selectedCard ? AlertColor({ severity: selectedCard.severity }) : {};
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -110,252 +199,211 @@ export default function TSP() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-800">
-                Field Operations Planner
+                Advisor Insights
               </h1>
               <p className="text-sm text-slate-600">
-                AI-Optimized Route Planning
+                AI-Powered recommendations and explainable insights
               </p>
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1">
-              <Zap className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs font-medium text-emerald-700">
-                State-Space Search Algorithm
+            <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1">
+              <Zap className="h-4 w-4 text-blue-600" />
+              <span className="text-xs font-medium text-blue-700">
+                Inference Engine Active
               </span>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left Panel */}
-          <div className="flex w-1/2 flex-col border-r border-slate-200 bg-white overflow-y-auto">
-            {/* Control Panel */}
-            <div className="border-b border-slate-200 p-6">
-              <h2 className="mb-4 text-sm font-semibold text-slate-800">
-                Route Configuration
-              </h2>
-
-              <div className="space-y-4">
-                {/* Branch Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Select Branch
-                  </label>
-                  <select
-                    value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  >
-                    {branchOptions.map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </option>
-                    ))}
-                  </select>
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center">
+                <div className="mb-4 inline-block rounded-full bg-emerald-100 p-4">
+                  <Zap className="h-8 w-8 animate-pulse text-emerald-600" />
                 </div>
-
-                {/* Daily Visit Target */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Daily Visit Target
-                  </label>
-                  <input
-                    type="number"
-                    value={visitCount}
-                    onChange={(e) => setVisitCount(parseInt(e.target.value) || 0)}
-                    min="1"
-                    max="50"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  />
-                </div>
-
-                {/* Optimize Button */}
-                <button
-                  onClick={handleOptimizeRoute}
-                  disabled={isLoading}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-white font-medium hover:bg-emerald-700 disabled:bg-slate-300 transition-colors"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader className="h-5 w-5 animate-spin" />
-                      <span>Optimizing Route...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-5 w-5" />
-                      <span>Optimize Route</span>
-                    </>
-                  )}
-                </button>
-                
-                {error && (
-                  <div className="mt-2 flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-                    <AlertCircle className="h-4 w-4" />
-                    {error}
-                  </div>
-                )}
+                <p className="text-slate-600">Running inference engine...</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  Analyzing portfolio and generating recommendations
+                </p>
               </div>
             </div>
-
-            {/* Statistics Summary */}
-            {routeData && (
-              <div className="border-b border-slate-200 p-6 bg-slate-50">
-                <h2 className="mb-4 text-sm font-semibold text-slate-800">
-                  Route Summary
-                </h2>
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Total Distance */}
-                  <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-                    <p className="text-xs text-slate-500">Total Distance</p>
-                    <p className="mt-1 text-lg font-bold text-emerald-600">
-                      {routeData.total_distance_km} km
-                    </p>
-                  </div>
-
-                  {/* Stops */}
-                  <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-                    <p className="text-xs text-slate-500">Stops</p>
-                    <p className="mt-1 text-lg font-bold text-emerald-600">
-                      {routeData.client_count}
-                    </p>
-                  </div>
-
-                  {/* Est. Fuel Cost (Approx calculation) */}
-                  <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-                    <p className="text-xs text-slate-500">Est. Fuel Cost</p>
-                    <p className="mt-1 text-lg font-bold text-emerald-600">
-                      ₹{Math.round(routeData.estimated_fuel_cost)}
-                    </p>
-                  </div>
-                  
-                  {/* Data Source - XAI for Planning */}
-                  <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm col-span-3">
-                    <p className="text-xs text-slate-600 font-medium flex items-center gap-1">
-                        <Zap className="h-3 w-3 text-purple-600" />
-                        Cost Source
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {routeData.data_source}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Itinerary List */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <h2 className="mb-4 text-sm font-semibold text-slate-800">
-                Optimized Itinerary
-              </h2>
-              
-              {!routeData ? (
-                 <div className="text-center text-slate-400 py-10">
-                   <Navigation className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                   <p>Select a branch and optimize to view route</p>
-                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {routeData.optimized_route.map((stop, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 hover:bg-slate-50 transition-colors"
-                    >
-                      {/* Step Number and Icon */}
-                      <div className="flex flex-col items-center gap-1">
-                        <div
-                          className={cn(
-                            "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white",
-                            stop.type === "branch"
-                              ? "bg-slate-800"
-                              : "bg-emerald-600",
-                          )}
-                        >
-                          {index + 1}
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-max">
+              {recommendations.map((rec) => {
+                const colors = AlertColor({ severity: rec.severity });
+                return (
+                  <div
+                    key={rec.id}
+                    onClick={() => handleCardClick(rec)}
+                    className={cn(
+                      "rounded-lg border p-5 transition-all duration-200 cursor-pointer hover:shadow-lg hover:-translate-y-1",
+                      colors.bg,
+                      colors.border,
+                    )}
+                  >
+                    {/* Alert Title */}
+                    <div className="mb-4 flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={cn("flex-shrink-0 mt-0.5", colors.text)}>
+                          <AlertIcon severity={rec.severity} />
                         </div>
-                        {index < routeData.optimized_route.length - 1 && (
-                          <div className="h-full w-0.5 bg-slate-200 my-1" />
-                        )}
-                      </div>
-
-                      {/* Stop Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {stop.type === "branch" ? (
-                            <Building2 className="h-4 w-4 flex-shrink-0 text-slate-600" />
-                          ) : (
-                            <Users className="h-4 w-4 flex-shrink-0 text-emerald-600" />
-                          )}
-                          <p className="text-sm font-medium text-slate-800 truncate">
-                            {stop.name}
+                        <div>
+                          <h3
+                            className={cn(
+                              "text-lg font-bold",
+                              colors.text,
+                            )}
+                          >
+                            {rec.alert}
+                          </h3>
+                          <p className="text-xs text-slate-600 mt-1">
+                            {rec.branch}
                           </p>
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {stop.distance_from_last === 0
-                            ? "Starting point"
-                            : `${stop.distance_from_last} km from previous`}
-                        </p>
                       </div>
+                    </div>
 
-                      {/* Distance Badge */}
-                      <ChevronRight className="h-4 w-4 flex-shrink-0 text-slate-300" />
+                    {/* Prescriptive Action */}
+                    <p className="text-sm text-slate-800 mb-4 leading-relaxed">
+                      {rec.recommendation}
+                    </p>
+
+                    {/* Divider */}
+                    <div className="my-4 border-t border-slate-300" />
+
+                    {/* Explainable Insight */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-700">
+                        Rule Applied:
+                      </p>
+                      <div className={cn(
+                        "inline-block px-3 py-1.5 rounded text-xs font-medium",
+                        colors.badge,
+                      )}>
+                        {rec.reason}
+                      </div>
+                    </div>
+
+                    {/* Click to Expand */}
+                    <div className="mt-4 flex items-center text-xs font-medium text-slate-600 hover:text-slate-800">
+                      <span>View Details</span>
+                      <ChevronRight className="h-3 w-3 ml-1" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Expanded Details Modal */}
+      {selectedCard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className={cn(
+            "w-full max-w-2xl rounded-lg border shadow-2xl overflow-hidden",
+            colors.border,
+          )}>
+            {/* Modal Header */}
+            <div className={cn(
+              "flex items-center justify-between px-6 py-4 border-b",
+              colors.bg,
+              colors.border,
+            )}>
+              <div className="flex items-center gap-3">
+                <div className={cn("flex-shrink-0", colors.text)}>
+                  <AlertIcon severity={selectedCard.severity} />
+                </div>
+                <div>
+                  <h2 className={cn("text-xl font-bold", colors.text)}>
+                    {selectedCard.detailsTitle}
+                  </h2>
+                  <p className="text-sm text-slate-600">{selectedCard.branch}</p>
+                </div>
+              </div>
+              <button
+                onClick={closeModal}
+                className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="bg-white p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {/* Detailed Explanation */}
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">Overview</h3>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {selectedCard.detailedExplanation}
+                </p>
+              </div>
+
+              {/* Rule Details */}
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">
+                  How This Rule Works
+                </h3>
+                <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
+                  <p className="text-sm text-slate-700 leading-relaxed font-mono">
+                    {selectedCard.ruleDetails}
+                  </p>
+                </div>
+              </div>
+
+              {/* Key Metrics */}
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-3">
+                  Key Metrics
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(selectedCard.metrics).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                    >
+                      <p className="text-xs text-slate-600 capitalize">
+                        {key.replace(/_/g, " ")}
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-emerald-600">
+                        {value}
+                      </p>
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Recommended Actions */}
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-3">
+                  Recommended Actions
+                </h3>
+                <ul className="space-y-2">
+                  {selectedCard.recommendations.map((action, index) => (
+                    <li key={index} className="flex gap-3 text-sm text-slate-700">
+                      <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                        {index + 1}
+                      </span>
+                      <span>{action}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
 
-          {/* Right Map Container */}
-          <div className="w-1/2 bg-slate-100 relative p-4">
-            <div className="h-full w-full bg-white rounded-xl shadow-sm overflow-hidden">
-               {/* --- REPLACED: Use MapPlaceholder instead of MapContainer to fix preview --- */}
-               <MapPlaceholder routeData={routeData} />
-               
-               {/* --- TO USE REAL MAP LOCALLY ---
-                  Uncomment the MapContainer block below after installing leaflet.
-               */}
-               {/*
-                <MapContainer 
-                  center={[23.1815, 85.3055]} 
-                  zoom={13} 
-                  scrollWheelZoom={true} 
-                  style={{ height: "100%", width: "100%" }}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  
-                  <MapRecenter center={routeData ? [routeData.optimized_route[0].lat, routeData.optimized_route[0].lon] : [23.1815, 85.3055]} />
-
-                  {routeData && (
-                    <>
-                      <Polyline 
-                        positions={routeData.optimized_route.map(stop => [stop.lat, stop.lon])} 
-                        color="#059669" 
-                        weight={4}
-                        opacity={0.7}
-                        dashArray="10, 10" 
-                      />
-                      {routeData.optimized_route.map((stop, idx) => (
-                        <Marker 
-                          key={idx} 
-                          position={[stop.lat, stop.lon]}
-                        >
-                          <Popup>
-                            <div className="text-sm font-bold">{stop.name}</div>
-                            <div className="text-xs text-slate-500">Stop #{idx + 1}</div>
-                          </Popup>
-                        </Marker>
-                      ))}
-                    </>
-                  )}
-                </MapContainer>
-               */}
+            {/* Modal Footer */}
+            <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 rounded-lg bg-slate-200 text-slate-800 font-medium hover:bg-slate-300 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }

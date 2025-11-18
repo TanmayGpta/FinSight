@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-// --- FIX: Correcting import path casing to match your file structure ---
+// --- FIX: Using 'SideBar' casing as per user's file structure ---
 import Sidebar from "../components/ui/SideBar";
 import {
   BarChart3,
@@ -22,6 +22,7 @@ import {
   Download,
   Info,
   TrendingDown,
+  MessageSquare
 } from "lucide-react";
 import {
   Line,
@@ -136,6 +137,36 @@ const delinquencyStaticData = {
   ],
 };
 
+// --- NEW XAI EXPLANATION COMPONENT ---
+const ForecastExplanation = ({ option }) => {
+  const getExplanationText = (id) => {
+    switch (id) {
+      case "disbursement":
+        return "This disbursement forecast exhibits high volatility, characterized by sharp peaks and valleys. The AI model is predicting that the current 'boom-and-bust' operational cycle will continue. **The dips suggest periods of lower activity**, likely due to internal monthly reporting, large loan processing delays, or external factors like local holidays. The forecast respects the financial floor and upper capacity (cap).";
+      case "collections":
+        return "The collections forecast shows a strong underlying trend but with recurring, predictable weekly dips. **These dips primarily correlate with weekends or local holiday cycles**, indicating that field staff collection efforts are consistently affected by these periodic events. The model accounts for this seasonality to give a realistic cash flow expectation.";
+      case "customers":
+        return "This cumulative customer growth curve is highly reliable. The forecast correctly identifies a period of **explosive growth** (late 2023/2024) followed by a predicted **leveling-off** phase. This 'S-curve' indicates the branch is approaching market saturation (hitting its capacity cap) and management should focus on retention rather than pure acquisition.";
+      case "delinquency":
+        return "Note: This is a static placeholder forecast. In the live system, a successful model would predict increases in delinquency rates 60-90 days out, allowing us to launch proactive intervention campaigns.";
+      default:
+        return "Select a forecast type to generate an AI-driven explanation of the observed patterns.";
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+      <h3 className="text-lg font-semibold text-blue-800 flex items-center gap-2 mb-3">
+        <MessageSquare className="h-5 w-5 text-blue-600" />
+        AI Narrative: Understanding the Forecast
+      </h3>
+      <p className="text-sm text-blue-700 leading-relaxed">
+        {getExplanationText(option.id)}
+      </p>
+    </div>
+  );
+};
+
 // Forecast Configuration Panel
 const ForecastConfig = ({
   selectedOption,
@@ -244,18 +275,18 @@ const ForecastConfig = ({
 
 // Forecast Results Chart
 const ForecastChart = ({ data, option, isLoading }) => {
-  // --- This component is back to your original logic ---
+  // === FIX: Use 'option' and 'data' props inside this component (not parent variables) ===
   if (!data || !option) return null;
 
   // Combine historical and forecast arrays for the chart
-  const combinedData = [...data.historical, ...data.forecast];
+  const combinedData = [...(data.historical || []), ...(data.forecast || [])];
   const { format, actualKey, predictedKey } = option;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       // Find the payload for each line
-      const actualPayload = payload.find((p) => p.dataKey === actualKey);
-      const predictedPayload = payload.find((p) => p.dataKey === predictedKey);
+      const actualPayload = payload.find((p) => p.dataKey === actualKey || p.dataKey === "actual");
+      const predictedPayload = payload.find((p) => p.dataKey === predictedKey || p.dataKey === "predicted");
 
       return (
         <div className="rounded-lg border bg-white p-3 shadow-md">
@@ -307,12 +338,12 @@ const ForecastChart = ({ data, option, isLoading }) => {
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={combinedData} // --- Back to using combinedData ---
+              data={combinedData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis
-                dataKey="month" // --- Back to using 'month' key ---
+                dataKey="month"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: "#64748b" }}
@@ -327,7 +358,7 @@ const ForecastChart = ({ data, option, isLoading }) => {
               <Legend />
               <Line
                 type="monotone"
-                dataKey={actualKey} // --- Back to original 'actual' key ---
+                dataKey="actual"
                 stroke="#059669"
                 strokeWidth={3}
                 dot={{ fill: "#059669", strokeWidth: 0, r: 4 }}
@@ -336,7 +367,7 @@ const ForecastChart = ({ data, option, isLoading }) => {
               />
               <Line
                 type="monotone"
-                dataKey={predictedKey} // --- Back to original 'predicted' key ---
+                dataKey="predicted"
                 stroke="#3b82f6"
                 strokeWidth={3}
                 strokeDasharray="8 4"
@@ -346,7 +377,7 @@ const ForecastChart = ({ data, option, isLoading }) => {
               />
 
               {/* Confidence lines (will work if data has them) */}
-              {data.forecast.length > 0 &&
+              {data.forecast && data.forecast.length > 0 &&
                 data.forecast[0].confidence_low && (
                   <Line
                     type="monotone"
@@ -360,7 +391,7 @@ const ForecastChart = ({ data, option, isLoading }) => {
                     legendType="none"
                   />
                 )}
-              {data.forecast.length > 0 &&
+              {data.forecast && data.forecast.length > 0 &&
                 data.forecast[0].confidence_high && (
                   <Line
                     type="monotone"
@@ -380,21 +411,24 @@ const ForecastChart = ({ data, option, isLoading }) => {
       )}
 
       {/* Forecast Summary */}
-      {!isLoading && data && (
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* --- Back to original logic --- */}
-          {data.forecast.slice(0, 3).map((item, index) => (
-            <div key={index} className="rounded-lg bg-slate-50 p-4">
-              <div className="text-sm font-medium text-slate-600">
-                {item.month}
-              </div>
-              <div className="text-lg font-bold text-slate-800">
-                {format(item[predictedKey])}
-              </div>
-            </div>
-          ))}
+     {/* Forecast Summary – hidden for Collection Rate */}
+{!isLoading && data && option.id !== "collections" && (
+  <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    {data.forecast.slice(0, 3).map((item, index) => (
+      <div key={index} className="rounded-lg bg-slate-50 p-4">
+        <div className="text-sm font-medium text-slate-600">
+          {item.month}
         </div>
-      )}
+        <div className="text-lg font-bold text-slate-800">
+          {format(item.predicted)}
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
+
+      
     </div>
   );
 };
@@ -443,17 +477,17 @@ const Forecast = () => {
         // --- The API now sends data in the *exact* format we need ---
         // We just need to rename the keys to 'actual' and 'predicted'
         // based on the option selected.
-        
-        const formattedHistorical = apiData.historical.map((item) => ({
+
+        const formattedHistorical = (apiData.historical || []).map((item) => ({
           month: item.month,
-          [actualKey]: item.actual, // Rename 'actual' to 'actual_disbursement' etc.
-          [predictedKey]: null,
+          actual: item.actual,
+          predicted: null,
         }));
 
-        const formattedForecast = apiData.forecast.map((item) => ({
+        const formattedForecast = (apiData.forecast || []).map((item) => ({
           month: item.month,
-          [actualKey]: null,
-          [predictedKey]: item.predicted, // Rename 'predicted' to 'predicted_disbursement' etc.
+          actual: null,
+          predicted: item.predicted,
           confidence_low: item.confidence_low,
           confidence_high: item.confidence_high,
         }));
@@ -520,12 +554,17 @@ const Forecast = () => {
           />
 
           {/* Forecast Results */}
-          {(forecastResults || isLoading) && (
+          {selectedOption && (forecastResults || isLoading) && (
             <ForecastChart
               data={forecastResults}
               option={selectedOption}
               isLoading={isLoading}
             />
+          )}
+
+          {/* --- NEW: AI EXPLANATION SECTION (kept in parent if you prefer) --- */}
+          {selectedOption && !isLoading && forecastResults && (
+            <ForecastExplanation option={selectedOption} />
           )}
 
           {/* Model Information (Unchanged) */}
