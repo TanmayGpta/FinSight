@@ -1,4 +1,3 @@
-from fastapi import APIRouter, Query
 from mysql.connector import connect
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,23 +6,29 @@ from jose import jwt, JWTError
 from .auth import get_current_user
 from typing import Optional
 from fastapi import Query
-import pickle
 import pandas as pd
 from prophet import Prophet
+import requests 
+from mysql.connector import connect
+
+
+GOOGLE_MAPS_API_KEY = 'AIzaSyDTlQ77xLDt5noMuczG8mrhoWr5vDLd7-g'
+import pickle
 from ai_modules.advisor_engine import load_rules, run_inference_engine
+from ai_modules.route_optimizer import optimize_route_greedy, generate_mock_coordinates
 
 router = APIRouter()
 
-# --- NON-AI ROUTES (KPIs, Login, etc.) ---
+# ==========================================
+# 1. BASIC DATA ROUTES (KPIs, Login, Auth)
+# ==========================================
 
 @router.get("/kpis")
 def get_kpis(
     user=Depends(get_current_user),
     branch: Optional[str] = Query(None)
 ):
-    # ... (Keep your existing KPI logic exactly as is) ...
-    print("Authenticated user:", user)
-    # 👇 Override branch only if NOT admin
+    # ... (Existing KPI Logic) ...
     if user["role"] != "admin":
         branch = user["branch"]
 
@@ -161,7 +166,6 @@ def get_kpis(
 
 @router.get("/delinquency")
 def get_delinquency(user=Depends(get_current_user)):
-    # ... (Keep your existing delinquency logic exactly as is) ...
     branch = user["branch"] if user["role"] != "admin" else None
     try:
         conn = connect(
@@ -171,14 +175,11 @@ def get_delinquency(user=Depends(get_current_user)):
             database="FinSight"
         )
         cursor = conn.cursor(dictionary=True)
-
-        # Step 1: Get max dpd_days to scale
         scale_query = "SELECT MAX(dpd_days) AS max_dpd FROM arrears WHERE dpd_days IS NOT NULL"
         cursor.execute(scale_query)
         max_dpd = cursor.fetchone()["max_dpd"] or 1
         scale_factor = 90 / max_dpd if max_dpd > 90 else 1
 
-        # Step 2: Get delinquent customers (grouped into scaled buckets)
         delinquency_query = f"""
         SELECT
             CASE
@@ -192,7 +193,6 @@ def get_delinquency(user=Depends(get_current_user)):
         JOIN office o ON c.office_id = o.id
         WHERE a.dpd_days > 0
         """
-
         params = []
         if branch:
             delinquency_query += " AND SUBSTRING_INDEX(o.name, ':', -1) = %s"
@@ -202,7 +202,6 @@ def get_delinquency(user=Depends(get_current_user)):
         cursor.execute(delinquency_query, params)
         bucket_results = cursor.fetchall()
 
-        # Step 3: Get total clients (filtered by branch if needed)
         total_clients_query = """
         SELECT COUNT(DISTINCT c.id) AS total
         FROM client c
@@ -215,7 +214,6 @@ def get_delinquency(user=Depends(get_current_user)):
             cursor.execute(total_clients_query)
         total_clients = cursor.fetchone()["total"]
 
-        # Step 4: Get delinquent client IDs
         delinquent_ids_query = """
         SELECT DISTINCT c.id
         FROM arrears a
@@ -231,11 +229,7 @@ def get_delinquency(user=Depends(get_current_user)):
 
         delinquent_ids = {row["id"] for row in cursor.fetchall()}
         delinquent_count = len(delinquent_ids)
-
-        # Step 5: Current = total clients - delinquent clients
         current_count = max(total_clients - delinquent_count, 0)
-
-        # Build final data array
         total_with_current = current_count + sum(b["customer_count"] for b in bucket_results)
 
         color_map = {
@@ -253,7 +247,6 @@ def get_delinquency(user=Depends(get_current_user)):
                 "color": color_map["Current"]
             }
         ]
-
         for b in bucket_results:
             data.append({
                 "name": b["bucket"],
@@ -271,7 +264,6 @@ def get_delinquency(user=Depends(get_current_user)):
 
 @router.get("/branches")
 def get_branches():
-    # ... (Keep your existing branches logic) ...
     try:
         conn = connect(
             host="localhost",
@@ -290,11 +282,8 @@ ALGORITHM = "HS256"
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    # ... (Keep your existing login logic) ...
     conn = connect(host="localhost", user="root", password="BtKQ@448", database="FinSight")
     cursor = conn.cursor(dictionary=True)
-
-    # Match against org table
     query = """
     SELECT SUBSTRING_INDEX(Branch, ':', -1) AS branch, Zonal_Head as zonal_head
     FROM org
@@ -309,7 +298,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         else:
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Build JWT token
     payload = {
         "sub": result["zonal_head"],
         "role": "admin" if result["zonal_head"] == "admin" else "zonal_head",
@@ -317,10 +305,13 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         "exp": datetime.utcnow() + timedelta(hours=12)
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
     return {"access_token": token, "token_type": "bearer"}
 
-# --- AI MODEL LOADING ---
+
+# ==========================================
+# 2. FORECASTING ROUTES (Learning Module)
+# ==========================================
+
 try:
     with open("models/disbursement_forecast_model.pkl", "rb") as f:
         model_disbursement = pickle.load(f)
@@ -335,29 +326,22 @@ except Exception as e:
     model_collections = None
     model_growth = None
 
-# --- AI FORECAST ROUTES (NO AUTH) ---
-
 @router.get("/forecast/disbursement")
 def get_disbursement_forecast(branch: str):
     if not model_disbursement:
         raise HTTPException(status_code=500, detail="Disbursement model is not available.")
     
     print(f"Generating disbursement forecast for: {branch}")
-
-    # 1. Create a future dataframe
     future = model_disbursement.make_future_dataframe(periods=12, freq='W')
     future['floor'] = 0
     future['cap'] = 1305000.0
 
-    # 2. Make the prediction
     forecast = model_disbursement.predict(future)
 
-    # 3. --- FIX: Use model.history for actuals ---
-    # Get historical data (Actuals)
+    # FIX: Use model.history for actuals
     hist_df = model_disbursement.history.copy()
     hist_df['date'] = pd.to_datetime(hist_df['ds'])
     
-    # Format Historical Data
     historical_data = []
     for _, row in hist_df.iterrows():
         historical_data.append({
@@ -366,11 +350,9 @@ def get_disbursement_forecast(branch: str):
             "predicted": None
         })
 
-    # Get Forecast Data (Predictions) - only future dates
     last_hist_date = hist_df['date'].max()
     fcst_df = forecast[forecast['ds'] > last_hist_date].copy()
     
-    # Format Forecast Data
     forecast_data = []
     for _, row in fcst_df.iterrows():
         forecast_data.append({
@@ -381,7 +363,6 @@ def get_disbursement_forecast(branch: str):
             "confidence_high": row['yhat_upper']
         })
     
-    # Return structure matching frontend expectation
     return {
         "branch": branch,
         "historical": historical_data,
@@ -394,16 +375,13 @@ def get_collections_forecast(branch: str):
         raise HTTPException(status_code=500, detail="Collections forecast model is not available.")
 
     print(f"Generating collections forecast for: {branch}")
-
-    # 1. Create a future dataframe
     future = model_collections.make_future_dataframe(periods=12, freq='W')
     future['floor'] = 0.0
     future['cap'] = 130000.0
 
-    # 2. Make the prediction
     forecast = model_collections.predict(future)
 
-    # 3. --- FIX: Use model.history for actuals ---
+    # FIX: Use model.history for actuals
     hist_df = model_collections.history.copy()
     hist_df['date'] = pd.to_datetime(hist_df['ds'])
     
@@ -440,16 +418,13 @@ def get_growth_forecast(branch: str):
         raise HTTPException(status_code=500, detail="Customer growth model is not available.")
         
     print(f"Generating customer growth forecast for: {branch}")
-
-    # 1. Create a future dataframe
     future = model_growth.make_future_dataframe(periods=90, freq='D')
     future['floor'] = 1.0
     future['cap'] = 250.5
 
-    # 2. Make the prediction
     forecast = model_growth.predict(future)
 
-    # 3. --- FIX: Use model.history for actuals ---
+    # FIX: Use model.history for actuals
     hist_df = model_growth.history.copy()
     hist_df['date'] = pd.to_datetime(hist_df['ds'])
     
@@ -480,7 +455,11 @@ def get_growth_forecast(branch: str):
         "forecast": forecast_data
     }
 
-# --- AI ADVISOR ROUTE ---
+
+# ==========================================
+# 3. ADVISOR ROUTES (Reasoning Module)
+# ==========================================
+
 try:
     all_rules = load_rules("ai_modules/rules.json")
     print(f"AI Advisor rules ({len(all_rules)} rules) loaded successfully.")
@@ -490,23 +469,16 @@ except Exception as e:
 
 @router.get("/advisor")
 def get_ai_advisor_insights(user=Depends(get_current_user)):
-    # ... (Keep your existing advisor logic) ...
     if not all_rules:
         raise HTTPException(status_code=500, detail="AI Advisor engine is not available.")
 
     branch = user["branch"] if user["role"] != "admin" else None
-    
     facts = {}
     try:
-        conn = connect(
-            host="localhost",
-            user="root",
-            password="BtKQ@448",
-            database="FinSight"
-        )
+        conn = connect(host="localhost", user="root", password="BtKQ@448", database="FinSight")
         cursor = conn.cursor(dictionary=True)
 
-        # Fact: branch_collection_rate_30d
+        # Fact gathering queries...
         last_30_days = datetime.now() - timedelta(days=30)
         rate_query = """
             SELECT SUM(lr.principal_completed_derived) / SUM(lr.principal_amount) * 100 AS rate
@@ -525,10 +497,8 @@ def get_ai_advisor_insights(user=Depends(get_current_user)):
         rate_result = cursor.fetchone()
         facts["branch_collection_rate_30d"] = rate_result['rate'] or 100
 
-        # Fact: customer_growth_30d
         first_of_this_month = datetime.today().replace(day=1)
         last_month_start = (first_of_this_month - timedelta(days=1)).replace(day=1)
-        
         growth_query = """
             SELECT COUNT(DISTINCT c.id) AS count
             FROM loan l
@@ -544,7 +514,6 @@ def get_ai_advisor_insights(user=Depends(get_current_user)):
         cursor.execute(growth_query, growth_params)
         facts["customer_growth_30d"] = cursor.fetchone()['count'] or 0
         
-        # Fact: current_par_percent
         par_query = """
             SELECT 
                 SUM(CASE WHEN a.dpd_days > 30 THEN a.total_overdue_derived ELSE 0 END) / 
@@ -570,7 +539,6 @@ def get_ai_advisor_insights(user=Depends(get_current_user)):
         print(f"Error gathering facts: {e}")
         return {"error": f"Could not gather facts: {e}"}
 
-    # Add dummy forecast facts for demo
     facts["forecasted_collections_next_week"] = 85000 
     facts["forecasted_growth_next_month"] = 15 
     
@@ -578,3 +546,144 @@ def get_ai_advisor_insights(user=Depends(get_current_user)):
     recommendations = run_inference_engine(facts, all_rules)
     
     return {"recommendations": recommendations}
+
+
+# ==========================================
+# 4. PLANNING ROUTES (State Space Search)
+# ==========================================
+
+# --- RESTORED ENDPOINT ---
+@router.get("/planning/route")
+def get_optimized_route(
+    branch: str,
+    num_clients: int = 10
+):
+    """
+    Simulates a set of clients for a branch and calculates the 
+    optimized collection route using Greedy Best-First Search.
+    """
+    try:
+        # 1. Get Branch Info
+        branch_location = {"id": "BRANCH", "name": f"Branch {branch}", "lat": 23.1815, "lon": 85.3055}
+
+        # 2. Fetch Real Client Names from DB
+        conn = connect(
+            host="localhost",
+            user="root",
+            password="BtKQ@448",
+            database="FinSight"
+        )
+        cursor = conn.cursor(dictionary=True)
+        
+        client_query = """
+            SELECT c.id, c.display_name 
+            FROM client c 
+            JOIN office o ON c.office_id = o.id
+            WHERE SUBSTRING_INDEX(o.name, ':', -1) = %s
+            LIMIT %s
+        """
+        cursor.execute(client_query, (branch.strip(), num_clients))
+        db_clients = cursor.fetchall()
+        conn.close()
+
+        if not db_clients:
+            db_clients = [{"id": i, "display_name": f"Client {i}"} for i in range(num_clients)]
+
+        # 3. Generate Mock Locations
+        mock_coords = generate_mock_coordinates(
+            branch_location["lat"], 
+            branch_location["lon"], 
+            len(db_clients), 
+            radius_km=5
+        )
+
+        # 4. Combine Name + Location
+        clients_with_loc = []
+        for i, client in enumerate(db_clients):
+            clients_with_loc.append({
+                "id": client["id"],
+                "name": client["display_name"],
+                "lat": mock_coords[i]["lat"],
+                "lon": mock_coords[i]["lon"]
+            })
+
+        # 5. Run State-Space Search
+        result = optimize_route_greedy(branch_location, clients_with_loc)
+        
+        return result
+
+    except Exception as e:
+        print(f"Error planning route: {e}")
+        return {"error": str(e)}
+
+# --- UPDATE THIS ROUTE ---
+@router.get("/planning/route")
+def get_optimized_route(
+    branch: str,
+    num_clients: int = 10
+):
+    """
+    Simulates a set of clients and calculates the optimized route.
+    Uses Google Maps API if GOOGLE_MAPS_API_KEY is set, otherwise uses Haversine.
+    """
+    try:
+        # 1. Get Branch Info
+        # Note: Using Deogarh coordinates
+        branch_location = {"id": "BRANCH", "name": f"Branch {branch}", "lat": 23.1815, "lon": 85.3055}
+
+        # 2. Fetch Real Client Names from DB
+        conn = connect(
+            host="localhost",
+            user="root",
+            password="BtKQ@448",
+            database="FinSight"
+        )
+        cursor = conn.cursor(dictionary=True)
+        
+        client_query = """
+            SELECT c.id, c.display_name 
+            FROM client c 
+            JOIN office o ON c.office_id = o.id
+            WHERE SUBSTRING_INDEX(o.name, ':', -1) = %s
+            LIMIT %s
+        """
+        cursor.execute(client_query, (branch.strip(), num_clients))
+        db_clients = cursor.fetchall()
+        conn.close()
+
+        if not db_clients:
+            db_clients = [{"id": i, "display_name": f"Client {i}"} for i in range(num_clients)]
+
+        # 3. Generate Mock Locations
+        # We generate these fresh every time this endpoint is called.
+        # This ensures "randomize actual places" behavior you requested.
+        mock_coords = generate_mock_coordinates(
+            branch_location["lat"], 
+            branch_location["lon"], 
+            len(db_clients), 
+            radius_km=5 # Scatter within 5km radius
+        )
+
+        # 4. Combine Name + Location
+        clients_with_loc = []
+        for i, client in enumerate(db_clients):
+            clients_with_loc.append({
+                # Ensure ID is string for dictionary keys
+                "id": str(client["id"]),
+                "name": client["display_name"],
+                "lat": mock_coords[i]["lat"],
+                "lon": mock_coords[i]["lon"]
+            })
+
+        # 5. Run State-Space Search (Pass the API Key)
+        result = optimize_route_greedy(
+            branch_location, 
+            clients_with_loc, 
+            api_key=GOOGLE_MAPS_API_KEY
+        )
+        
+        return result
+
+    except Exception as e:
+        print(f"Error planning route: {e}")
+        return {"error": str(e)}

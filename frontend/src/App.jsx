@@ -6,6 +6,8 @@ import Login from './pages/Login.jsx';
 import Branches from './pages/Branches.jsx';
 import RegionalMapPage from './pages/Regions.jsx';
 import Chatbot from './pages/chatbot.jsx';
+import TSP from './pages/TSP.jsx';
+
 function App() {
   return (
     <Routes>
@@ -16,6 +18,7 @@ function App() {
       <Route path="/Branches" element={<Branches />} />
       <Route path="/region" element={<RegionalMapPage />} />
       <Route path="/chatbot" element={<Chatbot />} />
+      <Route path="/TSP" element={<TSP />} />
     </Routes>
   );
 }
